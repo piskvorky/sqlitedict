@@ -12,14 +12,15 @@
 """
 A wrapper around sqlite3 database, with a dict-like interface:
 
->>> mydict = SqlDict('some.db', autocommit=True) # the mapping will be persisted to file some.db
+>>> mydict = SqliteDict('some.db', autocommit=True) # the mapping will be persisted to file some.db
 >>> mydict['some_key'] = any_picklable_object
 >>> print mydict['some_key']
 >>> print len(mydict) # etc... all standard dict functions work
 
 Pickle is used internally to serialize the values. Keys are strings.
-If you don't use autocommit (default), don't forget to `mydict.commit()` when done
-with a transaction.
+
+If you don't use autocommit (default is no autocommit), then don't forget to call
+`mydict.commit()` when done with a transaction.
 
 Features:
 * support for multiple dicts (SQLite tables) in the same database file
@@ -37,7 +38,7 @@ from threading import Thread
 
 def open(*args, **kwargs):
     """See documentation of the SqlDict class."""
-    return SqlDict(*args, **kwargs)
+    return SqliteDict(*args, **kwargs)
 
 
 def encode(obj):
@@ -50,7 +51,7 @@ def decode(obj):
 
 
 
-class SqlDict(object, DictMixin):
+class SqliteDict(object, DictMixin):
     def __init__(self, filename=':memory:', tablename='shelf', flag='c', autocommit=False):
         """
         Initialize a thread-safe sqlite-backed dictionary. The dictionary will
@@ -164,12 +165,7 @@ class SqlDict(object, DictMixin):
             self.conn.commit()
             self.conn.close()
             self.conn = None
-
-    def __del__(self):
-        """Make a best effort to commit any outstanding changes. Note that having
-        `__del__` still doesn't ensure it will be called."""
-        self.close()
-#endclass SqlDict
+#endclass SqliteDict
 
 
 
@@ -252,9 +248,9 @@ class SqliteMultithread(Thread):
 #endclass SqliteMultithread
 
 
-# running sqldict.py as script will perform a simple unit test
+# running sqlitedict.py as script will perform a simple unit test
 if __name__ in '__main___':
-    for d in SqlDict(), SqlDict('example', flag='n'):
+    for d in SqliteDict(), SqliteDict('example', flag='n'):
         assert list(d) == []
         assert len(d) == 0
         assert not d

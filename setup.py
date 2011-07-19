@@ -19,12 +19,12 @@ def read(fname):
 
 
 setup(
-    name = 'sqldict',
+    name = 'sqlitedict',
     version = '1.0',
     description = 'Persistent dict in Python, backed up by sqlite3 and pickle, multithread-safe.',
     long_description = read('README.txt'),
 
-    py_modules = ['sqldict'],
+    py_modules = ['sqlitedict'],
 
     # there is a bug in python2.5, preventing distutils from using any non-ascii characters :( http://bugs.python.org/issue2562
     author = 'Radim Rehurek', # u'Radim Řehůřek', # <- should really be this...
