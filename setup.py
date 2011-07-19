@@ -20,7 +20,7 @@ def read(fname):
 
 setup(
     name = 'sqlitedict',
-    version = '1.0',
+    version = '1.0.1',
     description = 'Persistent dict in Python, backed up by sqlite3 and pickle, multithread-safe.',
     long_description = read('README.txt'),
 
@@ -29,8 +29,9 @@ setup(
     # there is a bug in python2.5, preventing distutils from using any non-ascii characters :( http://bugs.python.org/issue2562
     author = 'Radim Rehurek', # u'Radim Řehůřek', # <- should really be this...
     author_email = 'radimrehurek@seznam.cz',
+    url = 'http://pypi.python.org/pypi/sqlitedict',
 
-    keywords = 'sqlite, persistent dict, anydbm, multithreaded',
+    keywords = 'sqlite, persistent dict, multithreaded',
 
     license = 'public domain',
     platforms = 'any',

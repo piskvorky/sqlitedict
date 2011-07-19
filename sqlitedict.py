@@ -10,21 +10,18 @@
 # Use the code in any way you like (at your own risk), it's public domain.
 
 """
-A wrapper around sqlite3 database, with a dict-like interface:
+A lightweight wrapper around Python's sqlite3 database, with a dict-like interface
+and multi-thread access support::
 
->>> mydict = SqliteDict('some.db', autocommit=True) # the mapping will be persisted to file some.db
+>>> mydict = SqliteDict('some.db', autocommit=True) # the mapping will be persisted to file `some.db`
 >>> mydict['some_key'] = any_picklable_object
 >>> print mydict['some_key']
->>> print len(mydict) # etc... all standard dict functions work
+>>> print len(mydict) # etc... all dict functions work
 
 Pickle is used internally to serialize the values. Keys are strings.
 
-If you don't use autocommit (default is no autocommit), then don't forget to call
-`mydict.commit()` when done with a transaction.
-
-Features:
-* support for multiple dicts (SQLite tables) in the same database file
-* support for multi-threaded access (needed by e.g. Pyro)
+If you don't use autocommit (default is no autocommit for performance), then
+don't forget to call `mydict.commit()` when done with a transaction.
 
 """
 

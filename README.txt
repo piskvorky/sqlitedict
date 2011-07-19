@@ -1,18 +1,19 @@
-================================================================
-sqlitedict -- persistent `dict`, backed-up by sqlite3 and pickle
-================================================================
-
+===============================================================
+sqlitedict -- persistent `dict`, backed-up by SQLite and pickle
+===============================================================
 
 A lightweight wrapper around Python's sqlite3 database, with a dict-like interface
 and multi-thread access support::
 
->>> mydict = SqliteDict('some.db') # the mapping will be persisted to file some.db
+>>> mydict = SqliteDict('some.db', autocommit=True) # the mapping will be persisted to file `some.db`
 >>> mydict['some_key'] = any_picklable_object
 >>> print mydict['some_key']
->>> print len(mydict) # etc... all standard dict functions work
+>>> print len(mydict) # etc... all dict functions work
 
 Pickle is used internally to serialize the values. Keys are strings.
 
+If you don't use autocommit (default is no autocommit for performance), then
+don't forget to call `mydict.commit()` when done with a transaction.
 
 Features
 --------
@@ -24,7 +25,7 @@ Features
   same thread.`
 
 Concurrent requests are still serialized internally, so this "multithreaded support"
-**doesn't** give you any performance benefit. It is a work-around for sqlite limitations in Python.
+**doesn't** give you any performance benefits. It is a work-around for sqlite limitations in Python.
 
 Installation
 ------------
@@ -46,6 +47,8 @@ Standard Python document strings are inside the module::
 >>> import sqlitedict
 >>> help(sqlitedict)
 
+(but it's just `dict` with a commit, really).
+
 Comments, bug reports
 ---------------------
 
@@ -55,5 +58,3 @@ issues or pull requests there.
 ----
 
 `sqlitedict` is released as public domain, you may do with it as you please. Hack away.
-
-Copyright (c) 2011 Radim Rehurek
