@@ -20,9 +20,9 @@ Features
 
 * Values can be **any picklable objects** (uses `cPickle` with the highest protocol).
 * Support for **multiple tables** (=dicts) living in the same database file.
-* Support for **access from multiple threads** (needed by e.g. Pyro). Vanilla sqlite3 gives
-  you `ProgrammingError: SQLite objects created in a thread can only be used in that
-  same thread.`
+* Support for **access from multiple threads** to the same connection (needed by e.g. Pyro).
+  Vanilla sqlite3 gives you `ProgrammingError: SQLite objects created in a thread can
+  only be used in that same thread.`
 
 Concurrent requests are still serialized internally, so this "multithreaded support"
 **doesn't** give you any performance benefits. It is a work-around for sqlite limitations in Python.
