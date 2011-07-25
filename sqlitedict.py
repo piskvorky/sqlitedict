@@ -183,7 +183,7 @@ class SqliteMultithread(Thread):
         self.start()
 
     def run(self):
-        conn = sqlite3.connect(self.filename, check_same_thread=False)
+        conn = sqlite3.connect(self.filename, isolation_level=None, check_same_thread=False)
         conn.text_factory = str
         cursor = conn.cursor()
         while True:
