@@ -27,16 +27,22 @@ don't forget to call `mydict.commit()` when done with a transaction.
 
 
 import sqlite3
+import os
+import tempfile
+import random
+import logging
 from cPickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
 from UserDict import DictMixin
 from Queue import Queue
 from threading import Thread
 
 
+logger = logging.getLogger('sqlitedict')
+
+
 def open(*args, **kwargs):
     """See documentation of the SqlDict class."""
     return SqliteDict(*args, **kwargs)
-
 
 def encode(obj):
     """Serialize an object using pickle to a binary format accepted by SQLite."""
@@ -47,13 +53,14 @@ def decode(obj):
     return loads(str(obj))
 
 
-
 class SqliteDict(object, DictMixin):
-    def __init__(self, filename=':memory:', tablename='shelf', flag='c', autocommit=False):
+    def __init__(self, filename=None, tablename='unnamed', flag='c', autocommit=False):
         """
         Initialize a thread-safe sqlite-backed dictionary. The dictionary will
         be a table `tablename` in database file `filename`. A single file (=database)
         may contain multiple tables.
+
+        If no `filename` is given, a random file in temp will be used.
 
         If you enable `autocommit`, changes will be committed after each operation
         (more inefficient but safer). Otherwise, changes are committed on `self.commit()`,
@@ -65,12 +72,16 @@ class SqliteDict(object, DictMixin):
           'n': create a new database (erasing any existing tables, not just `tablename`!).
 
         """
+        if filename is None:
+            randpart = hex(random.randint(0, 0xffffff))[2:]
+            filename = os.path.join(tempfile.gettempdir(), 'sqldict' + randpart)
         if flag == 'n':
-            import os
             if os.path.exists(filename):
                 os.remove(filename)
+        self.filename = filename
         self.tablename = tablename
 
+        logger.info("creating Sqlite table %r in %s" % (tablename, filename))
         MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS %s (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
         self.conn = SqliteMultithread(filename, autocommit=autocommit)
         self.conn.execute(MAKE_TABLE)
@@ -78,6 +89,8 @@ class SqliteDict(object, DictMixin):
         if flag == 'w':
             self.clear()
 
+    def __str__(self):
+        return "SqliteDict(%i items in %s)" % (len(self), self.conn.filename)
 
     def __len__(self):
         GET_LEN = 'SELECT COUNT(*) FROM %s' % self.tablename
@@ -156,12 +169,20 @@ class SqliteDict(object, DictMixin):
     def commit(self):
         if self.conn is not None:
             self.conn.commit()
+    sync = commit
 
     def close(self):
+        logger.debug("closing %s" % self)
         if self.conn is not None:
             self.conn.commit()
             self.conn.close()
             self.conn = None
+
+    def terminate(self):
+        """Delete the underlying database file. Use with care."""
+        self.close()
+        logger.info("deleting %s" % self.filename)
+        os.remove(self.filename)
 #endclass SqliteDict
 
 

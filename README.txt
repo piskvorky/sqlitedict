@@ -32,7 +32,7 @@ Installation
 
 The module has no dependencies beyond 2.5 <= Python < 3.0. Install with::
 
-    sudo easy_install sqlitedict
+    sudo easy_install -U sqlitedict
 
 or from the `source tar.gz <http://pypi.python.org/pypi/sqlitedict>`_ ::
 
