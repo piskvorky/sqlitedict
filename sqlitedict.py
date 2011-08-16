@@ -81,7 +81,7 @@ class SqliteDict(object, DictMixin):
         self.filename = filename
         self.tablename = tablename
 
-        logger.info("creating Sqlite table %r in %s" % (tablename, filename))
+        logger.info("opening Sqlite table %r in %s" % (tablename, filename))
         MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS %s (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
         self.conn = SqliteMultithread(filename, autocommit=autocommit)
         self.conn.execute(MAKE_TABLE)
@@ -204,9 +204,13 @@ class SqliteMultithread(Thread):
         self.start()
 
     def run(self):
-        conn = sqlite3.connect(self.filename, isolation_level=None, check_same_thread=False)
+        if self.autocommit:
+            conn = sqlite3.connect(self.filename, isolation_level=None, check_same_thread=False)
+        else:
+            conn = sqlite3.connect(self.filename, check_same_thread=False)
         conn.text_factory = str
         cursor = conn.cursor()
+        cursor.execute('PRAGMA synchronous=OFF')
         while True:
             req, arg, res = self.reqs.get()
             if req=='--close--':
