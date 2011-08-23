@@ -40,6 +40,9 @@ from threading import Thread
 logger = logging.getLogger('sqlitedict')
 
 
+DEBUG_OPENTHREADS = 0
+
+
 def open(*args, **kwargs):
     """See documentation of the SqlDict class."""
     return SqliteDict(*args, **kwargs)
@@ -174,7 +177,8 @@ class SqliteDict(object, DictMixin):
     def close(self):
         logger.debug("closing %s" % self)
         if self.conn is not None:
-            self.conn.commit()
+            if self.conn.autocommit:
+                self.conn.commit()
             self.conn.close()
             self.conn = None
 
@@ -182,7 +186,18 @@ class SqliteDict(object, DictMixin):
         """Delete the underlying database file. Use with care."""
         self.close()
         logger.info("deleting %s" % self.filename)
-        os.remove(self.filename)
+        try:
+            os.remove(self.filename)
+        except IOError, e:
+            logger.warning("failed to delete %s: %s" % (self.filename, e))
+
+    def __del__(self):
+        if self.conn is not None:
+            # like close(), but assume all globals are gone by now (like the logger)
+            if self.conn.autocommit:
+                self.conn.commit()
+            self.conn.close() # release the underlying thread
+            self.conn = None
 #endclass SqliteDict
 
 
@@ -204,6 +219,8 @@ class SqliteMultithread(Thread):
         self.start()
 
     def run(self):
+        global DEBUG_OPENTHREADS
+        DEBUG_OPENTHREADS += 1
         if self.autocommit:
             conn = sqlite3.connect(self.filename, isolation_level=None, check_same_thread=False)
         else:
@@ -226,6 +243,7 @@ class SqliteMultithread(Thread):
                 if self.autocommit:
                     conn.commit()
         conn.close()
+        DEBUG_OPENTHREADS -= 1
 
     def execute(self, req, arg=None, res=None):
         """
@@ -272,6 +290,8 @@ class SqliteMultithread(Thread):
 
 # running sqlitedict.py as script will perform a simple unit test
 if __name__ in '__main___':
+    logging.basicConfig(format='%(asctime)s : %(levelname)s : %(module)s:%(lineno)d : %(funcName)s(%(threadName)s) : %(message)s')
+    logging.root.setLevel(level=logging.INFO)
     for d in SqliteDict(), SqliteDict('example', flag='n'):
         assert list(d) == []
         assert len(d) == 0
