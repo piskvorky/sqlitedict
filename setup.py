@@ -20,7 +20,7 @@ def read(fname):
 
 setup(
     name = 'sqlitedict',
-    version = '1.0.4',
+    version = '1.0.5',
     description = 'Persistent dict in Python, backed up by sqlite3 and pickle, multithread-safe.',
     long_description = read('README.txt'),
 

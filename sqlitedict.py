@@ -40,8 +40,6 @@ from threading import Thread
 logger = logging.getLogger('sqlitedict')
 
 
-DEBUG_OPENTHREADS = 0
-
 
 def open(*args, **kwargs):
     """See documentation of the SqlDict class."""
@@ -63,7 +61,8 @@ class SqliteDict(object, DictMixin):
         be a table `tablename` in database file `filename`. A single file (=database)
         may contain multiple tables.
 
-        If no `filename` is given, a random file in temp will be used.
+        If no `filename` is given, a random file in temp will be used (and deleted
+        from temp once the dict is closed/deleted).
 
         If you enable `autocommit`, changes will be committed after each operation
         (more inefficient but safer). Otherwise, changes are committed on `self.commit()`,
@@ -75,7 +74,8 @@ class SqliteDict(object, DictMixin):
           'n': create a new database (erasing any existing tables, not just `tablename`!).
 
         """
-        if filename is None:
+        self.in_temp = filename is None
+        if self.in_temp:
             randpart = hex(random.randint(0, 0xffffff))[2:]
             filename = os.path.join(tempfile.gettempdir(), 'sqldict' + randpart)
         if flag == 'n':
@@ -97,24 +97,25 @@ class SqliteDict(object, DictMixin):
 
     def __len__(self):
         GET_LEN = 'SELECT COUNT(*) FROM %s' % self.tablename
-        return self.conn.select_one(GET_LEN)[0]
+        rows = self.conn.select_one(GET_LEN)[0]
+        return rows if rows is not None else 0
 
     def __bool__(self):
         GET_LEN = 'SELECT MAX(ROWID) FROM %s' % self.tablename
         return self.conn.select_one(GET_LEN) is not None
 
     def iterkeys(self):
-        GET_KEYS = 'SELECT key FROM %s' % self.tablename
+        GET_KEYS = 'SELECT key FROM %s ORDER BY rowid' % self.tablename
         for key in self.conn.select(GET_KEYS):
             yield key[0]
 
     def itervalues(self):
-        GET_VALUES = 'SELECT value FROM %s' % self.tablename
+        GET_VALUES = 'SELECT value FROM %s ORDER BY rowid' % self.tablename
         for value in self.conn.select(GET_VALUES):
             yield decode(value[0])
 
     def iteritems(self):
-        GET_ITEMS = 'SELECT key, value FROM %s' % self.tablename
+        GET_ITEMS = 'SELECT key, value FROM %s ORDER BY rowid' % self.tablename
         for key, value in self.conn.select(GET_ITEMS):
             yield key, decode(value)
 
@@ -181,6 +182,11 @@ class SqliteDict(object, DictMixin):
                 self.conn.commit()
             self.conn.close()
             self.conn = None
+        if self.in_temp:
+            try:
+                os.remove(self.filename)
+            except:
+                pass
 
     def terminate(self):
         """Delete the underlying database file. Use with care."""
@@ -198,6 +204,11 @@ class SqliteDict(object, DictMixin):
                 self.conn.commit()
             self.conn.close() # release the underlying thread
             self.conn = None
+        if self.in_temp:
+            try:
+                os.remove(self.filename)
+            except:
+                pass
 #endclass SqliteDict
 
 
@@ -219,8 +230,6 @@ class SqliteMultithread(Thread):
         self.start()
 
     def run(self):
-        global DEBUG_OPENTHREADS
-        DEBUG_OPENTHREADS += 1
         if self.autocommit:
             conn = sqlite3.connect(self.filename, isolation_level=None, check_same_thread=False)
         else:
@@ -243,7 +252,6 @@ class SqliteMultithread(Thread):
                 if self.autocommit:
                     conn.commit()
         conn.close()
-        DEBUG_OPENTHREADS -= 1
 
     def execute(self, req, arg=None, res=None):
         """
@@ -340,4 +348,3 @@ if __name__ in '__main___':
         assert not d
         d.close()
     print 'all tests passed :-)'
-
