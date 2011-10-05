@@ -198,17 +198,17 @@ class SqliteDict(object, DictMixin):
             logger.warning("failed to delete %s: %s" % (self.filename, e))
 
     def __del__(self):
-        if self.conn is not None:
-            # like close(), but assume all globals are gone by now (like the logger)
-            if self.conn.autocommit:
-                self.conn.commit()
-            self.conn.close() # release the underlying thread
-            self.conn = None
-        if self.in_temp:
-            try:
+        # like close(), but assume globals are gone by now (such as the logger)
+        try:
+            if self.conn is not None:
+                if self.conn.autocommit:
+                    self.conn.conn.commit()
+                self.conn.conn.close()
+                self.conn = None
+            if self.in_temp:
                 os.remove(self.filename)
-            except:
-                pass
+        except:
+            pass
 #endclass SqliteDict
 
 
