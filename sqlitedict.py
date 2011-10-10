@@ -93,9 +93,15 @@ class SqliteDict(object, DictMixin):
             self.clear()
 
     def __str__(self):
-        return "SqliteDict(%i items in %s)" % (len(self), self.conn.filename)
+#        return "SqliteDict(%i items in %s)" % (len(self), self.conn.filename)
+        return "SqliteDict(%s)" % (self.conn.filename)
 
     def __len__(self):
+        # `select count (*)` is super slow in sqlite (does a linear scan!!)
+        # As a result, len() is very slow too once the table size grows beyond trivial.
+        # We could keep the total count of rows ourselves, by means of triggers,
+        # but that seems too complicated and would slow down normal operation
+        # (insert/delete etc).
         GET_LEN = 'SELECT COUNT(*) FROM %s' % self.tablename
         rows = self.conn.select_one(GET_LEN)[0]
         return rows if rows is not None else 0
