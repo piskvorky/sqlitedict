@@ -55,7 +55,8 @@ def decode(obj):
 
 
 class SqliteDict(object, DictMixin):
-    def __init__(self, filename=None, tablename='unnamed', flag='c', autocommit=False):
+    def __init__(self, filename=None, tablename='unnamed', flag='c',
+                 autocommit=False, journal_mode="DELETE"):
         """
         Initialize a thread-safe sqlite-backed dictionary. The dictionary will
         be a table `tablename` in database file `filename`. A single file (=database)
@@ -67,6 +68,9 @@ class SqliteDict(object, DictMixin):
         If you enable `autocommit`, changes will be committed after each operation
         (more inefficient but safer). Otherwise, changes are committed on `self.commit()`,
         `self.clear()` and `self.close()`.
+
+        Set `journal_mode` to 'OFF' if you're experiencing sqlite I/O problems
+        or if you need performance and don't care about crash-consistency.
 
         The `flag` parameter:
           'c': default mode, open for read/write, creating the db/table if necessary.
@@ -86,7 +90,7 @@ class SqliteDict(object, DictMixin):
 
         logger.info("opening Sqlite table %r in %s" % (tablename, filename))
         MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS %s (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
-        self.conn = SqliteMultithread(filename, autocommit=autocommit)
+        self.conn = SqliteMultithread(filename, autocommit=autocommit, journal_mode=journal_mode)
         self.conn.execute(MAKE_TABLE)
         self.conn.commit()
         if flag == 'w':
@@ -227,10 +231,11 @@ class SqliteMultithread(Thread):
     in a separate thread (in the same order they arrived).
 
     """
-    def __init__(self, filename, autocommit):
+    def __init__(self, filename, autocommit, journal_mode):
         super(SqliteMultithread, self).__init__()
         self.filename = filename
         self.autocommit = autocommit
+        self.journal_mode = journal_mode
         self.reqs = Queue() # use request queue of unlimited size
         self.setDaemon(True) # python2.5-compatible
         self.start()
@@ -240,6 +245,7 @@ class SqliteMultithread(Thread):
             conn = sqlite3.connect(self.filename, isolation_level=None, check_same_thread=False)
         else:
             conn = sqlite3.connect(self.filename, check_same_thread=False)
+        conn.execute('PRAGMA journal_mode = %s' % self.journal_mode)
         conn.text_factory = str
         cursor = conn.cursor()
         cursor.execute('PRAGMA synchronous=OFF')
