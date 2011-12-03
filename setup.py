@@ -22,14 +22,15 @@ setup(
     name = 'sqlitedict',
     version = '1.0.8',
     description = 'Persistent dict in Python, backed up by sqlite3 and pickle, multithread-safe.',
-    long_description = read('README.txt'),
+    long_description = read('README.rst'),
 
     py_modules = ['sqlitedict'],
 
     # there is a bug in python2.5, preventing distutils from using any non-ascii characters :( http://bugs.python.org/issue2562
     author = 'Radim Rehurek', # u'Radim Řehůřek', # <- should really be this...
     author_email = 'radimrehurek@seznam.cz',
-    url = 'http://pypi.python.org/pypi/sqlitedict',
+    url = 'https://github.com/piskvorky/sqlitedict',
+    download_url = 'http://pypi.python.org/pypi/sqlitedict',
 
     keywords = 'sqlite, persistent dict, multithreaded',
 
