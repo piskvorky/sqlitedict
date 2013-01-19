@@ -45,9 +45,11 @@ def open(*args, **kwargs):
     """See documentation of the SqlDict class."""
     return SqliteDict(*args, **kwargs)
 
+
 def encode(obj):
     """Serialize an object using pickle to a binary format accepted by SQLite."""
     return sqlite3.Binary(dumps(obj, protocol=PICKLE_PROTOCOL))
+
 
 def decode(obj):
     """Deserialize objects retrieved from SQLite."""
@@ -251,9 +253,9 @@ class SqliteMultithread(Thread):
         cursor.execute('PRAGMA synchronous=OFF')
         while True:
             req, arg, res = self.reqs.get()
-            if req=='--close--':
+            if req == '--close--':
                 break
-            elif req=='--commit--':
+            elif req == '--commit--':
                 conn.commit()
             else:
                 cursor.execute(req, arg)
