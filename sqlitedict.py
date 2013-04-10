@@ -214,8 +214,8 @@ class SqliteDict(object, DictMixin):
         try:
             if self.conn is not None:
                 if self.conn.autocommit:
-                    self.conn.conn.commit()
-                self.conn.conn.close()
+                    self.conn.commit()
+                self.conn.close()
                 self.conn = None
             if self.in_temp:
                 os.remove(self.filename)
