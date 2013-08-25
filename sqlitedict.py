@@ -98,6 +98,12 @@ class SqliteDict(object, DictMixin):
         if flag == 'w':
             self.clear()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        self.close()
+
     def __str__(self):
 #        return "SqliteDict(%i items in %s)" % (len(self), self.conn.filename)
         return "SqliteDict(%s)" % (self.conn.filename)
