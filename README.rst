@@ -49,6 +49,18 @@ Standard Python document strings are inside the module::
 
 (but it's just `dict` with a commit, really).
 
+Beware: sqlitedict is working with entire serialised/deserialised objects. So functions working with references like setdefault doesn't work as expected with objects. Consider subclassing or writing your own function like this::
+
+    def appendToList(dict, key, val):
+        if key in dict:
+            oldVal = dict[key]
+            oldVal.extend(val)
+            dict[key] = oldVal
+        else:
+            dict[key] = [val]
+
+
+
 Comments, bug reports
 ---------------------
 
