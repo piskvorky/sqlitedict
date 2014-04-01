@@ -57,6 +57,18 @@ You'll need to explicitly assign the mutated object back to achieve the same eff
 >>> val.append(1)
 >>> mydict['new_key'] = val
 
+
+**Note**: due to the way the keys are handled internally, mydict[5] and mydict['5'] both refer to the single key '5'::
+
+>>> mydict = sqlitedict.SqliteDict()
+>>> mydict[9] = 'town'
+>>> mydict['4'] = 'zebra'
+>>> mydict.keys()
+>>> # ['9', '4']
+>>> mydict[4]
+>>> # 'zebra'
+
+
 Comments, bug reports
 ---------------------
 
