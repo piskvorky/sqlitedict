@@ -1,18 +1,15 @@
 import unittest
 import sqlitedict
 
-from test_temp_db import TempSqliteDictTest
+class SqliteDictUtilsTest(unittest.TestCase):
+    
 
-class SqliteDictUtilsTest(TempSqliteDictTest):
-
-    def setUp(self):
-        self.d = sqlitedict.open('tests/db/sqlitedict-open.sqlite')
-
-    def tearDown(self):
+    def test_terminate_instead_close(self):
+        ''' make terminate() instead of close()
+        '''
+        self.d = sqlitedict.open('tests/db/sqlitedict-terminate.sqlite')
+        self.d.commit()
         self.d.terminate()   
-
-
-class SqliteDictWithStatementTest(unittest.TestCase):
 
     def test_with_statement(self):
         ''' test_with_statement
