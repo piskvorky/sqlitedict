@@ -61,14 +61,16 @@ You'll need to explicitly assign the mutated object back to achieve the same eff
 For developers
 --------------
 
+Install::
+
 # pip install nose
 # pip install coverage
 
-To perform all tests
+To perform all tests::
 
 # make test-all
 
-To perform all tests with coverage
+To perform all tests with coverage::
 
 # make test-all-with-coverage
 
