@@ -57,6 +57,22 @@ You'll need to explicitly assign the mutated object back to achieve the same eff
 >>> val.append(1)
 >>> mydict['new_key'] = val
 
+
+For developers
+--------------
+
+# pip install nose
+# pip install coverage
+
+To perform all tests
+
+# make test-all
+
+To perform all tests with coverage
+
+# make test-all-with-coverage
+
+
 Comments, bug reports
 ---------------------
 
