@@ -37,3 +37,13 @@ class StartsWithEmptySqliteDictTest(TempSqliteDictTest):
     def tearDown(self):
         self.d.terminate()
 
+
+class SqliteDictAutocommitTest(TempSqliteDictTest):
+
+    def setUp(self):
+        self.d = sqlitedict.SqliteDict(
+                        'tests/db/sqlitedict-autocommit.sqlite', 
+                        autocommit=True)
+
+    def tearDown(self):
+        self.d.terminate()
