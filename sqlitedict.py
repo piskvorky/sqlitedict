@@ -313,6 +313,7 @@ class SqliteMultithread(Thread):
 
     def close(self):
         self.execute('--close--')
+        self.join()
 #endclass SqliteMultithread
 
 
