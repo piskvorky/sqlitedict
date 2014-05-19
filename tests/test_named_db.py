@@ -21,7 +21,7 @@ class CreateNewSqliteDictTest(TempSqliteDictTest):
 
     def tearDown(self):
         ''' first attempt of running test will not passed, because file
-            will no be created. The next of tests will be passed as
+            is not created. The next of tests will be passed as
             file tests/db/sqlitedict-with-n-flag.sqlite is exist
         '''
         pass
