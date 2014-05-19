@@ -18,18 +18,12 @@ class TempSqliteDictTest(unittest.TestCase):
         self.assertEqual(list(self.d), [])
         self.assertEqual(len(self.d), 0)
 
-    def test_open_close_sqlitedict(self):
-        ''' test_open_sqlitedict
+    def test_assign_values(self):
+        ''' test_assign_values
         '''
         self.d['abc'] = 'edf'
         self.assertEqual(self.d['abc'], 'edf')
         self.assertEqual(len(self.d), 1)
-
-    def test_open_delete_sqlitedict(self):
-        ''' test_open_sqlitedict
-        '''
-        self.d['abc'] = 'edf'
-        self.assertEqual(self.d['abc'], 'edf')
 
     def test_clear_data(self):
         ''' test_clear_data

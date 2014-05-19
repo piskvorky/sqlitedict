@@ -13,18 +13,15 @@ class NamedSqliteDictTest(TempSqliteDictTest):
 
 
 class CreateNewSqliteDictTest(TempSqliteDictTest):
-
+    ''' first attempt of running test will not passed, because file
+        is not created. The next of tests will be passed as
+        file tests/db/sqlitedict-with-n-flag.sqlite is exist
+    '''
     def setUp(self):
         self.d = sqlitedict.SqliteDict(
                         'tests/db/sqlitedict-with-n-flag.sqlite', 
                         flag="n")
 
-    def tearDown(self):
-        ''' first attempt of running test will not passed, because file
-            is not created. The next of tests will be passed as
-            file tests/db/sqlitedict-with-n-flag.sqlite is exist
-        '''
-        pass
 
 
 class StartsWithEmptySqliteDictTest(TempSqliteDictTest):
