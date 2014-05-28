@@ -199,6 +199,7 @@ class SqliteDict(object, DictMixin):
             if self.conn.autocommit:
                 self.conn.commit()
             self.conn.close()
+            self.conn.join()
             self.conn = None
         if self.in_temp:
             try:
@@ -222,6 +223,7 @@ class SqliteDict(object, DictMixin):
                 if self.conn.autocommit:
                     self.conn.commit()
                 self.conn.close()
+                self.conn.join()
                 self.conn = None
             if self.in_temp:
                 os.remove(self.filename)
