@@ -4,7 +4,6 @@ import sqlitedict
 
 class SqliteDictUtilsTest(unittest.TestCase):
     
-
     def test_terminate_instead_close(self):
         ''' make terminate() instead of close()
         '''
