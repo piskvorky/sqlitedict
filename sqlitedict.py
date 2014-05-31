@@ -25,7 +25,6 @@ don't forget to call `mydict.commit()` when done with a transaction.
 
 """
 
-
 import sqlite3
 import os
 import tempfile
@@ -87,11 +86,16 @@ class SqliteDict(object, DictMixin):
         if flag == 'n':
             if os.path.exists(filename):
                 os.remove(filename)
+
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(filename))
+            # raise RuntimeError('Error! The directory does not exist, %s' % os.path.dirname(filename))
+
         self.filename = filename
         self.tablename = tablename
 
         logger.info("opening Sqlite table %r in %s" % (tablename, filename))
-        MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS %s (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
+        MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS %s (key TEXT PRIMARY KEY, value BLOB)' % self.tablename        
         self.conn = SqliteMultithread(filename, autocommit=autocommit, journal_mode=journal_mode)
         self.conn.execute(MAKE_TABLE)
         self.conn.commit()
