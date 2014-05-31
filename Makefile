@@ -1,7 +1,13 @@
 test-all:
-	@ rm -d -f tests/db/*
+	@ echo '- removing old data'
+	@ rm -f -R tests/db/
+	@ echo '- creating new tests/db/ (required for tests)'
+	@ mkdir -p tests/db
 	@ nosetests --cover-package=sqlitedict --verbosity=1 --cover-erase 
 
 test-all-with-coverage:
-	@ rm -d -f tests/db/*
+	@ echo '- removing old data'
+	@ rm -f -R tests/db/
+	@ echo '- creating new tests/db/ (required for tests)'
+	@ mkdir -p tests/db
 	@ nosetests --cover-package=sqlitedict --verbosity=1 --cover-erase --with-coverage 	
