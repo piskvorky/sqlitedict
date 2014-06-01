@@ -20,7 +20,7 @@ def read(fname):
 
 setup(
     name = 'sqlitedict',
-    version = '1.0.9',
+    version = '1.1.0',
     description = 'Persistent dict in Python, backed up by sqlite3 and pickle, multithread-safe.',
     long_description = read('README.rst'),
 
@@ -38,7 +38,7 @@ setup(
     platforms = 'any',
 
     classifiers = [ # from http://pypi.python.org/pypi?%3Aaction=list_classifiers
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
         'Intended Audience :: Developers',
         'License :: Public Domain',
