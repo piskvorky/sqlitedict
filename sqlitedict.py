@@ -25,7 +25,6 @@ don't forget to call `mydict.commit()` when done with a transaction.
 
 """
 
-
 import sqlite3
 import os
 import tempfile
@@ -87,11 +86,15 @@ class SqliteDict(object, DictMixin):
         if flag == 'n':
             if os.path.exists(filename):
                 os.remove(filename)
+
+        if not os.path.exists(os.path.dirname(filename)):
+            raise RuntimeError('Error! The directory does not exist, %s' % os.path.dirname(filename))
+
         self.filename = filename
         self.tablename = tablename
 
         logger.info("opening Sqlite table %r in %s" % (tablename, filename))
-        MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS %s (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
+        MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS %s (key TEXT PRIMARY KEY, value BLOB)' % self.tablename        
         self.conn = SqliteMultithread(filename, autocommit=autocommit, journal_mode=journal_mode)
         self.conn.execute(MAKE_TABLE)
         self.conn.commit()
@@ -313,58 +316,7 @@ class SqliteMultithread(Thread):
 
     def close(self):
         self.execute('--close--')
+        self.join()
 #endclass SqliteMultithread
 
 
-# running sqlitedict.py as script will perform a simple unit test
-if __name__ in '__main___':
-    logging.basicConfig(format='%(asctime)s : %(levelname)s : %(module)s:%(lineno)d : %(funcName)s(%(threadName)s) : %(message)s')
-    logging.root.setLevel(level=logging.INFO)
-    for d in SqliteDict(), SqliteDict('example', flag='n'):
-        assert list(d) == []
-        assert len(d) == 0
-        assert not d
-        d['abc'] = 'rsvp' * 100
-        assert d['abc'] == 'rsvp' * 100
-        assert len(d) == 1
-        d['abc'] = 'lmno'
-        assert d['abc'] == 'lmno'
-        assert len(d) == 1
-        del d['abc']
-        assert not d
-        assert len(d) == 0
-        d['abc'] = 'lmno'
-        d['xyz'] = 'pdq'
-        assert len(d) == 2
-        assert list(d.iteritems()) == [('abc', 'lmno'), ('xyz', 'pdq')]
-        assert d.items() == [('abc', 'lmno'), ('xyz', 'pdq')]
-        assert d.values() == ['lmno', 'pdq']
-        assert d.keys() == ['abc', 'xyz']
-        assert list(d) == ['abc', 'xyz']
-        d.update(p='x', q='y', r='z')
-        assert len(d) == 5
-        assert d.items() == [('abc', 'lmno'), ('xyz', 'pdq'), ('q', 'y'), ('p', 'x'), ('r', 'z')]
-        del d['abc']
-        try:
-            error = d['abc']
-        except KeyError:
-            pass
-        else:
-            assert False
-        try:
-            del d['abc']
-        except KeyError:
-            pass
-        else:
-            assert False
-        assert list(d) == ['xyz', 'q', 'p', 'r']
-        assert d
-        d.clear()
-        assert not d
-        assert list(d) == []
-        d.update(p='x', q='y', r='z')
-        assert list(d) == ['q', 'p', 'r']
-        d.clear()
-        assert not d
-        d.close()
-    print 'all tests passed :-)'
