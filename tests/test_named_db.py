@@ -49,5 +49,3 @@ class SqliteDictAutocommitTest(TempSqliteDictTest):
 
     def tearDown(self):
         self.d.terminate()
-
-

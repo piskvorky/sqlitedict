@@ -8,12 +8,12 @@ class TempSqliteDictTest(unittest.TestCase):
         self.d = sqlitedict.SqliteDict()
 
     def tearDown(self):
-        self.d.close()   
+        self.d.close()
 
     def test_create_sqlitedict(self):
         ''' test_create_sqlitedict
         '''
-        self.assertIs(type(self.d), sqlitedict.SqliteDict)
+        self.assertTrue(isinstance(self.d, sqlitedict.SqliteDict))
         self.assertEqual(dict(self.d), {})
         self.assertEqual(list(self.d), [])
         self.assertEqual(len(self.d), 0)
@@ -51,7 +51,7 @@ class TempSqliteDictTest(unittest.TestCase):
         self.d['abc'] = 'lmno'
         self.d['xyz'] = 'pdq'
         self.assertEqual(len(self.d), 2)
-        self.assertEqual(list(self.d.iteritems()), 
+        self.assertEqual(list(self.d.iteritems()),
                         [('abc', 'lmno'), ('xyz', 'pdq')])
         self.assertEqual(self.d.items(),
                         [('abc', 'lmno'), ('xyz', 'pdq')])
@@ -79,5 +79,3 @@ class TempSqliteDictTest(unittest.TestCase):
 
         self.assertRaises(KeyError, remove_nonexists, self.d, 'abc')
         self.assertRaises(KeyError, get_value, self.d, 'abc')
-
-
