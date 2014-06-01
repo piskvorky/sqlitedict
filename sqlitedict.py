@@ -94,7 +94,7 @@ class SqliteDict(object, DictMixin):
         self.tablename = tablename
 
         logger.info("opening Sqlite table %r in %s" % (tablename, filename))
-        MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS %s (key TEXT PRIMARY KEY, value BLOB)' % self.tablename        
+        MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS %s (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
         self.conn = SqliteMultithread(filename, autocommit=autocommit, journal_mode=journal_mode)
         self.conn.execute(MAKE_TABLE)
         self.conn.commit()
@@ -318,5 +318,3 @@ class SqliteMultithread(Thread):
         self.execute('--close--')
         self.join()
 #endclass SqliteMultithread
-
-

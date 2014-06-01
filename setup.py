@@ -10,7 +10,6 @@ sudo python ./setup.py install
 """
 
 import os
-import sys
 
 from distutils.core import setup
 
