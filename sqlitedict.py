@@ -87,8 +87,10 @@ class SqliteDict(object, DictMixin):
             if os.path.exists(filename):
                 os.remove(filename)
 
-        if not os.path.exists(os.path.dirname(filename)):
-            raise RuntimeError('Error! The directory does not exist, %s' % os.path.dirname(filename))
+        dirname = os.path.dirname(filename)
+        if dirname:
+            if not os.path.exists(dirname):
+                raise RuntimeError('Error! The directory does not exist, %s' % dirname)
 
         self.filename = filename
         self.tablename = tablename
