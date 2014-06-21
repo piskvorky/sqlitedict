@@ -13,6 +13,15 @@ def norm_file(fname):
     return fname
 
 
+class InMemorySqliteDictTest(TempSqliteDictTest):
+
+    def setUp(self):
+        self.d = sqlitedict.SqliteDict(filename=':memory:', autocommit=True)
+
+    def tearDown(self):
+        self.d.terminate()
+
+
 class NamedSqliteDictTest(TempSqliteDictTest):
 
     def setUp(self):
@@ -49,3 +58,5 @@ class SqliteDictAutocommitTest(TempSqliteDictTest):
 
     def tearDown(self):
         self.d.terminate()
+
+

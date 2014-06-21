@@ -36,7 +36,7 @@ from Queue import Queue
 from threading import Thread
 
 
-logger = logging.getLogger('sqlitedict')
+logger = logging.getLogger(__name__)
 
 
 
@@ -214,6 +214,10 @@ class SqliteDict(object, DictMixin):
     def terminate(self):
         """Delete the underlying database file. Use with care."""
         self.close()
+        
+        if self.filename == ':memory:':
+            return
+
         logger.info("deleting %s" % self.filename)
         try:
             os.remove(self.filename)
