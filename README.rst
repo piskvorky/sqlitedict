@@ -1,5 +1,5 @@
 ===============================================================
-sqlitedict -- persistent `dict`, backed-up by SQLite and pickle
+sqlitedict -- persistent ``dict``, backed-up by SQLite and pickle
 ===============================================================
 
 |Travis|_
@@ -24,16 +24,16 @@ and multi-thread access support::
 Pickle is used internally to serialize the values. Keys are strings.
 
 If you don't use autocommit (default is no autocommit for performance), then
-don't forget to call `mydict.commit()` when done with a transaction.
+don't forget to call ``mydict.commit()`` when done with a transaction.
 
 Features
 --------
 
-* Values can be **any picklable objects** (uses `cPickle` with the highest protocol).
+* Values can be **any picklable objects** (uses ``cPickle`` with the highest protocol).
 * Support for **multiple tables** (=dicts) living in the same database file.
 * Support for **access from multiple threads** to the same connection (needed by e.g. Pyro).
-  Vanilla sqlite3 gives you `ProgrammingError: SQLite objects created in a thread can
-  only be used in that same thread.`
+  Vanilla sqlite3 gives you ``ProgrammingError: SQLite objects created in a thread can
+  only be used in that same thread.``
 
 Concurrent requests are still serialized internally, so this "multithreaded support"
 **doesn't** give you any performance benefits. It is a work-around for sqlite limitations in Python.
@@ -58,10 +58,10 @@ Standard Python document strings are inside the module::
 >>> import sqlitedict
 >>> help(sqlitedict)
 
-(but it's just `dict` with a commit, really).
+(but it's just ``dict`` with a commit, really).
 
-**Beware**: because of Python semantics, `sqlitedict` cannot know when a mutable persistent-dictionary entry was modified.
-For example, `mydict.setdefault('new_key', []).append(1)` will leave `mydict['new_key']` equal to empty list, not `[1]`.
+**Beware**: because of Python semantics, ``sqlitedict`` cannot know when a mutable persistent-dictionary entry was modified.
+For example, ``mydict.setdefault('new_key', []).append(1)`` will leave ``mydict['new_key']`` equal to empty list, not ``[1]``.
 You'll need to explicitly assign the mutated object back to achieve the same effect::
 
 >>> val = mydict.get('new_key', [])
@@ -89,9 +89,9 @@ To perform all tests with coverage::
 Comments, bug reports
 ---------------------
 
-`sqlitedict` resides on `github <https://github.com/piskvorky/sqlitedict>`_. You can file
+``sqlitedict`` resides on `github <https://github.com/piskvorky/sqlitedict>`_. You can file
 issues or pull requests there.
 
 ----
 
-`sqlitedict` is released as public domain, you may do with it as you please. Hack away.
+``sqlitedict`` is released as public domain, you may do with it as you please. Hack away.
