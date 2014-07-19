@@ -30,7 +30,12 @@ import os
 import tempfile
 import random
 import logging
-from cPickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
+
+try:
+    from cPickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
+except ImportError:
+    from pickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
+
 from UserDict import DictMixin
 from Queue import Queue
 from threading import Thread
@@ -214,15 +219,15 @@ class SqliteDict(object, DictMixin):
     def terminate(self):
         """Delete the underlying database file. Use with care."""
         self.close()
-        
+
         if self.filename == ':memory:':
             return
 
         logger.info("deleting %s" % self.filename)
         try:
             os.remove(self.filename)
-        except IOError, e:
-            logger.warning("failed to delete %s: %s" % (self.filename, e))
+        except IOError as e:
+            logger.warning("failed to delete %s: %s" % (self.filename, str(e)))
 
     def __del__(self):
         # like close(), but assume globals are gone by now (such as the logger)
