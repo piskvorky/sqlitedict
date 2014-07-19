@@ -30,7 +30,12 @@ import os
 import tempfile
 import random
 import logging
-from cPickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
+
+try:
+    from cPickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
+except ImportError:
+    from pickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
+
 from UserDict import DictMixin
 from Queue import Queue
 from threading import Thread
