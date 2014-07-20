@@ -1,6 +1,7 @@
 import unittest
 import sqlitedict
 
+from sys import version_info
 
 class TempSqliteDictTest(unittest.TestCase):
 
@@ -51,8 +52,9 @@ class TempSqliteDictTest(unittest.TestCase):
         self.d['abc'] = 'lmno'
         self.d['xyz'] = 'pdq'
         self.assertEqual(len(self.d), 2)
-        self.assertEqual(list(self.d.iteritems()),
-                        [('abc', 'lmno'), ('xyz', 'pdq')])
+        if version_info.major == 2:
+            self.assertEqual(list(self.d.iteritems()),
+                            [('abc', 'lmno'), ('xyz', 'pdq')])
         self.assertEqual(self.d.items(),
                         [('abc', 'lmno'), ('xyz', 'pdq')])
         self.assertEqual(self.d.values(), ['lmno', 'pdq'])

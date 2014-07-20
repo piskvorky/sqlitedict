@@ -31,23 +31,28 @@ import tempfile
 import random
 import logging
 
+from threading import Thread
+from sys import version_info
+
 try:
     from cPickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
 except ImportError:
     from pickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
 
-from UserDict import DictMixin
-from sys import version_info
+# some Python 2/3 imports
+try:
+   from UserDict import DictMixin
+except ImportError: # that's actually only a try
+   from collections import UserDict as DictMixin
+
 try:
     from Queue import Queue
 except ImportError:
     from queue import Queue
 
-from threading import Thread
 
 
 logger = logging.getLogger(__name__)
-
 
 
 def open(*args, **kwargs):
@@ -62,10 +67,10 @@ def encode(obj):
 
 def decode(obj):
     """Deserialize objects retrieved from SQLite."""
-    return loads(str(obj))
+    return loads(bytes(obj))
 
 
-class SqliteDict(object, DictMixin):
+class SqliteDict(DictMixin, object):
     def __init__(self, filename=None, tablename='unnamed', flag='c',
                  autocommit=False, journal_mode="DELETE"):
         """
@@ -134,8 +139,11 @@ class SqliteDict(object, DictMixin):
         return rows if rows is not None else 0
 
     def __bool__(self):
+        return len(self) == 0
         GET_LEN = 'SELECT MAX(ROWID) FROM %s' % self.tablename
-        return self.conn.select_one(GET_LEN) is not None
+        res=self.conn.select_one(GET_LEN)
+        #print ("bool: ",str(res))
+        return res is not None and len(res)!=0
 
     # python 2 iterkeys (added later)
     def keys(self):
@@ -161,7 +169,6 @@ class SqliteDict(object, DictMixin):
         item = self.conn.select_one(GET_ITEM, (key,))
         if item is None:
             raise KeyError(key)
-
         return decode(item[0])
 
     def __setitem__(self, key, value):
@@ -176,7 +183,7 @@ class SqliteDict(object, DictMixin):
 
     def update(self, items=(), **kwds):
         try:
-            items = [(k, encode(v)) for k, v in items.iteritems()]
+            items = [(k, encode(v)) for k, v in items.items()]
         except AttributeError:
             pass
 
@@ -243,6 +250,7 @@ if version_info.major == 2:
     setattr(SqliteDict,"iterkeys",lambda self: self.keys())
     setattr(SqliteDict,"itervalues",lambda self: self.values())
     setattr(SqliteDict,"iteritems",lambda self: self.items())
+    SqliteDict.__nonzero__ = SqliteDict.__len__#SqliteDict.__bool__
 
 #endclass SqliteDict
 
@@ -319,7 +327,7 @@ class SqliteMultithread(Thread):
     def select_one(self, req, arg=None):
         """Return only the first row of the SELECT, or None if there are no matching rows."""
         try:
-            return iter(self.select(req, arg)).next()
+            return next(iter(self.select(req, arg)))
         except StopIteration:
             return None
 
