@@ -140,17 +140,17 @@ class SqliteDict(object, DictMixin):
     # python 2 iterkeys (added later)
     def keys(self):
         GET_KEYS = 'SELECT key FROM %s ORDER BY rowid' % self.tablename
-        return map(lambda key: key[0], self.conn.select(GET_KEYS))
+        return [key[0] for key in self.conn.select(GET_KEYS)]
 
     # python 2 itervalues(added later)
     def values(self):
         GET_VALUES = 'SELECT value FROM %s ORDER BY rowid' % self.tablename
-        return map(lambda value: decode(value[0]), self.conn.select(GET_VALUES))
+        return  [decode(value[0]) for value in self.conn.select(GET_VALUES)]
 
     # python 2 iteritems (added later)
     def items(self):
         GET_ITEMS = 'SELECT key, value FROM %s ORDER BY rowid' % self.tablename
-        return map(lambda key_val: (key_val[0],decode(key_val[1])), self.conn.select(GET_ITEMS))
+        return [(key,decode(value)) for key,value in self.conn.select(GET_ITEMS)]
 
     def __contains__(self, key):
         HAS_ITEM = 'SELECT 1 FROM %s WHERE key = ?' % self.tablename
