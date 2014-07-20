@@ -37,7 +37,12 @@ except ImportError:
     from pickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
 
 from UserDict import DictMixin
-from Queue import Queue
+from sys import version_info
+try:
+    from Queue import Queue
+except ImportError:
+    from queue import Queue
+
 from threading import Thread
 
 
@@ -132,20 +137,20 @@ class SqliteDict(object, DictMixin):
         GET_LEN = 'SELECT MAX(ROWID) FROM %s' % self.tablename
         return self.conn.select_one(GET_LEN) is not None
 
-    def iterkeys(self):
+    # python 2 iterkeys (added later)
+    def keys(self):
         GET_KEYS = 'SELECT key FROM %s ORDER BY rowid' % self.tablename
-        for key in self.conn.select(GET_KEYS):
-            yield key[0]
+        return map(lambda key: key[0], self.conn.select(GET_KEYS))
 
-    def itervalues(self):
+    # python 2 itervalues(added later)
+    def values(self):
         GET_VALUES = 'SELECT value FROM %s ORDER BY rowid' % self.tablename
-        for value in self.conn.select(GET_VALUES):
-            yield decode(value[0])
+        return map(lambda value: decode(value[0]), self.conn.select(GET_VALUES))
 
-    def iteritems(self):
+    # python 2 iteritems (added later)
+    def items(self):
         GET_ITEMS = 'SELECT key, value FROM %s ORDER BY rowid' % self.tablename
-        for key, value in self.conn.select(GET_ITEMS):
-            yield key, decode(value)
+        return map(lambda key_val: (key_val[0],decode(key_val[1])), self.conn.select(GET_ITEMS))
 
     def __contains__(self, key):
         HAS_ITEM = 'SELECT 1 FROM %s WHERE key = ?' % self.tablename
@@ -180,17 +185,8 @@ class SqliteDict(object, DictMixin):
         if kwds:
             self.update(kwds)
 
-    def keys(self):
-        return list(self.iterkeys())
-
-    def values(self):
-        return list(self.itervalues())
-
-    def items(self):
-        return list(self.iteritems())
-
     def __iter__(self):
-        return self.iterkeys()
+        return iter(self.keys())
 
     def clear(self):
         CLEAR_ALL = 'DELETE FROM %s;' % self.tablename # avoid VACUUM, as it gives "OperationalError: database schema has changed"
@@ -241,9 +237,14 @@ class SqliteDict(object, DictMixin):
                 os.remove(self.filename)
         except:
             pass
+
+# Adding extra methods for python 2 compatibility (at import time)
+if version_info.major == 2:
+    setattr(SqliteDict,"iterkeys",lambda self: self.keys())
+    setattr(SqliteDict,"itervalues",lambda self: self.values())
+    setattr(SqliteDict,"iteritems",lambda self: self.items())
+
 #endclass SqliteDict
-
-
 
 class SqliteMultithread(Thread):
     """
