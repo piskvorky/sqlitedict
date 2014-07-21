@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2011 Radim Rehurek <radimrehurek@seznam.cz>
-
-# Hacked together from:
+# This code is distributed under the terms and conditions
+# from the Apache License, Version 2.0
+#
+# http://opensource.org/licenses/apache2.0.php
+#
+# This code was inspired in the next publications:
 #  * http://code.activestate.com/recipes/576638-draft-for-an-sqlite3-based-dbm/
 #  * http://code.activestate.com/recipes/526618/
 #
-# Use the code in any way you like (at your own risk), it's public domain.
-
 """
 A lightweight wrapper around Python's sqlite3 database, with a dict-like interface
 and multi-thread access support::
@@ -31,18 +32,28 @@ import tempfile
 import random
 import logging
 
+from threading import Thread
+from sys import version_info
+
 try:
     from cPickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
 except ImportError:
     from pickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
 
-from UserDict import DictMixin
-from Queue import Queue
-from threading import Thread
+# some Python 3 vs 2 imports
+try:
+   from collections import UserDict as DictClass
+except ImportError:
+   from UserDict import DictMixin as DictClass
+
+try:
+    from queue import Queue
+except ImportError:
+    from Queue import Queue
+
 
 
 logger = logging.getLogger(__name__)
-
 
 
 def open(*args, **kwargs):
@@ -57,10 +68,10 @@ def encode(obj):
 
 def decode(obj):
     """Deserialize objects retrieved from SQLite."""
-    return loads(str(obj))
+    return loads(bytes(obj))
 
 
-class SqliteDict(object, DictMixin):
+class SqliteDict(DictClass):
     def __init__(self, filename=None, tablename='unnamed', flag='c',
                  autocommit=False, journal_mode="DELETE"):
         """
@@ -115,8 +126,10 @@ class SqliteDict(object, DictMixin):
         self.close()
 
     def __str__(self):
-#        return "SqliteDict(%i items in %s)" % (len(self), self.conn.filename)
         return "SqliteDict(%s)" % (self.conn.filename)
+
+    def __repr__(self):
+        return str(self) # no need of something complex
 
     def __len__(self):
         # `select count (*)` is super slow in sqlite (does a linear scan!!)
@@ -129,23 +142,24 @@ class SqliteDict(object, DictMixin):
         return rows if rows is not None else 0
 
     def __bool__(self):
-        GET_LEN = 'SELECT MAX(ROWID) FROM %s' % self.tablename
-        return self.conn.select_one(GET_LEN) is not None
+        # No elements is False, otherwise True
+        GET_MAX = 'SELECT MAX(ROWID) FROM %s' % self.tablename
+        m = self.conn.select_one(GET_MAX)[0]
+        # Explicit better than implicit and bla bla
+        return True if m is not None else False
+        #return bool(len(self))
 
-    def iterkeys(self):
+    def keys(self):
         GET_KEYS = 'SELECT key FROM %s ORDER BY rowid' % self.tablename
-        for key in self.conn.select(GET_KEYS):
-            yield key[0]
+        return [key[0] for key in self.conn.select(GET_KEYS)]
 
-    def itervalues(self):
+    def values(self):
         GET_VALUES = 'SELECT value FROM %s ORDER BY rowid' % self.tablename
-        for value in self.conn.select(GET_VALUES):
-            yield decode(value[0])
+        return  [decode(value[0]) for value in self.conn.select(GET_VALUES)]
 
-    def iteritems(self):
+    def items(self):
         GET_ITEMS = 'SELECT key, value FROM %s ORDER BY rowid' % self.tablename
-        for key, value in self.conn.select(GET_ITEMS):
-            yield key, decode(value)
+        return [(key,decode(value)) for key,value in self.conn.select(GET_ITEMS)]
 
     def __contains__(self, key):
         HAS_ITEM = 'SELECT 1 FROM %s WHERE key = ?' % self.tablename
@@ -156,7 +170,6 @@ class SqliteDict(object, DictMixin):
         item = self.conn.select_one(GET_ITEM, (key,))
         if item is None:
             raise KeyError(key)
-
         return decode(item[0])
 
     def __setitem__(self, key, value):
@@ -171,7 +184,7 @@ class SqliteDict(object, DictMixin):
 
     def update(self, items=(), **kwds):
         try:
-            items = [(k, encode(v)) for k, v in items.iteritems()]
+            items = [(k, encode(v)) for k, v in items.items()]
         except AttributeError:
             pass
 
@@ -180,17 +193,8 @@ class SqliteDict(object, DictMixin):
         if kwds:
             self.update(kwds)
 
-    def keys(self):
-        return list(self.iterkeys())
-
-    def values(self):
-        return list(self.itervalues())
-
-    def items(self):
-        return list(self.iteritems())
-
     def __iter__(self):
-        return self.iterkeys()
+        return iter(self.keys())
 
     def clear(self):
         CLEAR_ALL = 'DELETE FROM %s;' % self.tablename # avoid VACUUM, as it gives "OperationalError: database schema has changed"
@@ -241,9 +245,15 @@ class SqliteDict(object, DictMixin):
                 os.remove(self.filename)
         except:
             pass
+
+# Adding extra methods for python 2 compatibility (at import time)
+if version_info.major == 2:
+    setattr(SqliteDict,"iterkeys",lambda self: self.keys())
+    setattr(SqliteDict,"itervalues",lambda self: self.values())
+    setattr(SqliteDict,"iteritems",lambda self: self.items())
+    SqliteDict.__nonzero__ = SqliteDict.__bool__#SqliteDict.__bool__
+    del SqliteDict.__bool__ #not needed and confusing
 #endclass SqliteDict
-
-
 
 class SqliteMultithread(Thread):
     """
@@ -318,7 +328,7 @@ class SqliteMultithread(Thread):
     def select_one(self, req, arg=None):
         """Return only the first row of the SELECT, or None if there are no matching rows."""
         try:
-            return iter(self.select(req, arg)).next()
+            return next(iter(self.select(req, arg)))
         except StopIteration:
             return None
 
