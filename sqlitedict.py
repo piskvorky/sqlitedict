@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2011 Radim Rehurek <radimrehurek@seznam.cz>
-
-# Hacked together from:
+# This code is distributed under the terms and conditions
+# from the Apache License, Version 2.0
+#
+# http://opensource.org/licenses/apache2.0.php
+#
+# This code was inspired in the next publications:
 #  * http://code.activestate.com/recipes/576638-draft-for-an-sqlite3-based-dbm/
 #  * http://code.activestate.com/recipes/526618/
 #
-# Use the code in any way you like (at your own risk), it's public domain.
 
 """
 A lightweight wrapper around Python's sqlite3 database, with a dict-like interface
@@ -60,7 +62,7 @@ def decode(obj):
     return loads(str(obj))
 
 
-class SqliteDict(object, DictMixin):
+class SqliteDict(DictMixin, object):
     def __init__(self, filename=None, tablename='unnamed', flag='c',
                  autocommit=False, journal_mode="DELETE"):
         """
@@ -128,9 +130,9 @@ class SqliteDict(object, DictMixin):
         rows = self.conn.select_one(GET_LEN)[0]
         return rows if rows is not None else 0
 
-    def __bool__(self):
-        GET_LEN = 'SELECT MAX(ROWID) FROM %s' % self.tablename
-        return self.conn.select_one(GET_LEN) is not None
+    def __nonzero__(self):
+        # No elements is 0, otherwise True
+        return bool(len(self))
 
     def iterkeys(self):
         GET_KEYS = 'SELECT key FROM %s ORDER BY rowid' % self.tablename
