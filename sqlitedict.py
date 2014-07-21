@@ -140,8 +140,12 @@ class SqliteDict(DictClass, object):
         return rows if rows is not None else 0
 
     def __bool__(self):
-        # No elements is 0, otherwise True
-        return bool(len(self))
+        # No elements is False, otherwise True
+        GET_MAX = 'SELECT MAX(ROWID) FROM %s' % self.tablename
+        m = self.conn.select_one(GET_MAX)[0]
+        # Explicit better than implicit and bla bla
+        return True if m is not None and int(m)>0 else False
+        #return bool(len(self))
 
     def keys(self):
         GET_KEYS = 'SELECT key FROM %s ORDER BY rowid' % self.tablename
