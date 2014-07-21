@@ -40,16 +40,16 @@ try:
 except ImportError:
     from pickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
 
-# some Python 2/3 imports
+# some Python 3/2 imports
 try:
-   from UserDict import DictMixin
+   from collections import UserDict as DictClass
 except ImportError: # that's actually only a try
-   from collections import UserDict as DictMixin
+   from UserDict import DictMixin as DictClass
 
 try:
-    from Queue import Queue
-except ImportError:
     from queue import Queue
+except ImportError:
+    from Queue import Queue
 
 
 
@@ -71,7 +71,7 @@ def decode(obj):
     return loads(bytes(obj))
 
 
-class SqliteDict(DictMixin, object):
+class SqliteDict(DictClass, object):
     def __init__(self, filename=None, tablename='unnamed', flag='c',
                  autocommit=False, journal_mode="DELETE"):
         """
