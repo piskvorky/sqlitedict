@@ -147,7 +147,6 @@ class SqliteDict(DictClass):
         m = self.conn.select_one(GET_MAX)[0]
         # Explicit better than implicit and bla bla
         return True if m is not None else False
-        #return bool(len(self))
 
     def keys(self):
         GET_KEYS = 'SELECT key FROM %s ORDER BY rowid' % self.tablename
