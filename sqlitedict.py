@@ -139,23 +139,17 @@ class SqliteDict(DictMixin, object):
         return rows if rows is not None else 0
 
     def __bool__(self):
-        return len(self) == 0
-        GET_LEN = 'SELECT MAX(ROWID) FROM %s' % self.tablename
-        res=self.conn.select_one(GET_LEN)
-        #print ("bool: ",str(res))
-        return res is not None and len(res)!=0
+        # No elements is 0, otherwise True
+        return bool(len(self))
 
-    # python 2 iterkeys (added later)
     def keys(self):
         GET_KEYS = 'SELECT key FROM %s ORDER BY rowid' % self.tablename
         return [key[0] for key in self.conn.select(GET_KEYS)]
 
-    # python 2 itervalues(added later)
     def values(self):
         GET_VALUES = 'SELECT value FROM %s ORDER BY rowid' % self.tablename
         return  [decode(value[0]) for value in self.conn.select(GET_VALUES)]
 
-    # python 2 iteritems (added later)
     def items(self):
         GET_ITEMS = 'SELECT key, value FROM %s ORDER BY rowid' % self.tablename
         return [(key,decode(value)) for key,value in self.conn.select(GET_ITEMS)]
@@ -250,8 +244,8 @@ if version_info.major == 2:
     setattr(SqliteDict,"iterkeys",lambda self: self.keys())
     setattr(SqliteDict,"itervalues",lambda self: self.values())
     setattr(SqliteDict,"iteritems",lambda self: self.items())
-    SqliteDict.__nonzero__ = SqliteDict.__len__#SqliteDict.__bool__
-
+    SqliteDict.__nonzero__ = SqliteDict.__bool__#SqliteDict.__bool__
+    del SqliteDict.__bool__ #not needed and confusing
 #endclass SqliteDict
 
 class SqliteMultithread(Thread):
