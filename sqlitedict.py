@@ -60,7 +60,7 @@ def decode(obj):
     return loads(str(obj))
 
 
-class SqliteDict(object, DictMixin):
+class SqliteDict(DictMixin, object):
     def __init__(self, filename=None, tablename='unnamed', flag='c',
                  autocommit=False, journal_mode="DELETE"):
         """
