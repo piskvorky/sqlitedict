@@ -40,10 +40,10 @@ try:
 except ImportError:
     from pickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
 
-# some Python 3/2 imports
+# some Python 3 vs 2 imports
 try:
    from collections import UserDict as DictClass
-except ImportError: # that's actually only a try
+except ImportError:
    from UserDict import DictMixin as DictClass
 
 try:
@@ -126,8 +126,10 @@ class SqliteDict(DictClass, object):
         self.close()
 
     def __str__(self):
-#        return "SqliteDict(%i items in %s)" % (len(self), self.conn.filename)
         return "SqliteDict(%s)" % (self.conn.filename)
+
+    def __repr__(self):
+        return str(self) # no need of something complex
 
     def __len__(self):
         # `select count (*)` is super slow in sqlite (does a linear scan!!)
