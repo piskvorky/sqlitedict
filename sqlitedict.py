@@ -146,7 +146,7 @@ class SqliteDict(DictClass, object):
         GET_MAX = 'SELECT MAX(ROWID) FROM %s' % self.tablename
         m = self.conn.select_one(GET_MAX)[0]
         # Explicit better than implicit and bla bla
-        return True if m is not None and int(m)>0 else False
+        return True if m is not None else False
         #return bool(len(self))
 
     def keys(self):
