@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# This code is distributed with Python Software Foundation License
-# https://www.python.org/download/releases/2.7/license/
+# This code is distributed under the terms and conditions
+# from the Apache License, Version 2.0
+#
+# http://opensource.org/licenses/apache2.0.php
 #
 # This code was inspired in the next publications:
 #  * http://code.activestate.com/recipes/576638-draft-for-an-sqlite3-based-dbm/
