@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2011 Radim Rehurek <radimrehurek@seznam.cz>
-
-# Hacked together from:
+# This code is distributed under the terms and conditions
+# from the Apache License, Version 2.0
+#
+# http://opensource.org/licenses/apache2.0.php
+#
+# This code was inspired in the next publications:
 #  * http://code.activestate.com/recipes/576638-draft-for-an-sqlite3-based-dbm/
 #  * http://code.activestate.com/recipes/526618/
 #
-# Use the code in any way you like (at your own risk), it's public domain.
-
 """
 A lightweight wrapper around Python's sqlite3 database, with a dict-like interface
 and multi-thread access support::
