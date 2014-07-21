@@ -128,9 +128,9 @@ class SqliteDict(DictMixin, object):
         rows = self.conn.select_one(GET_LEN)[0]
         return rows if rows is not None else 0
 
-    def __bool__(self):
-        GET_LEN = 'SELECT MAX(ROWID) FROM %s' % self.tablename
-        return self.conn.select_one(GET_LEN) is not None
+    def __nonzero__(self):
+        # No elements is 0, otherwise True
+        return bool(len(self))
 
     def iterkeys(self):
         GET_KEYS = 'SELECT key FROM %s ORDER BY rowid' % self.tablename
