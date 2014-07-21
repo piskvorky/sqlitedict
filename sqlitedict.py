@@ -71,7 +71,7 @@ def decode(obj):
     return loads(bytes(obj))
 
 
-class SqliteDict(DictClass, object):
+class SqliteDict(DictClass):
     def __init__(self, filename=None, tablename='unnamed', flag='c',
                  autocommit=False, journal_mode="DELETE"):
         """
