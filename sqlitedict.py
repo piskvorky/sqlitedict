@@ -35,7 +35,9 @@ import logging
 from threading import Thread
 from sys import version_info
 
-# Minimum version required version 2.6
+# Minimum version required version 2.6;
+# python 2.5 has syntax which is already incompatible
+# but Py 2.7 is backwards compatible
 _major_version=version_info[0]
 if _major_version<3: # py <= 2.x
   if version_info[1]<6: # py <= 2.5

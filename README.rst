@@ -41,8 +41,8 @@ Concurrent requests are still serialized internally, so this "multithreaded supp
 Installation
 ------------
 
-The module has no dependencies beyond 2.5 <= Python and should work without problems in python 3 series (tested on 3.4.)
-Install or upgrade with::
+The module has no dependencies beyond 2.6 <= Python and should work without problems in python 3 series (tested on 3.4.)
+Install or upgrade with:
 
     sudo easy_install -U sqlitedict
 
