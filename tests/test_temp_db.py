@@ -1,6 +1,8 @@
 import unittest
 import sqlitedict
 
+from sys import version_info
+_major_version=version_info[0]
 
 class TempSqliteDictTest(unittest.TestCase):
 
@@ -51,8 +53,9 @@ class TempSqliteDictTest(unittest.TestCase):
         self.d['abc'] = 'lmno'
         self.d['xyz'] = 'pdq'
         self.assertEqual(len(self.d), 2)
-        self.assertEqual(list(self.d.iteritems()),
-                        [('abc', 'lmno'), ('xyz', 'pdq')])
+        if _major_version == 2:
+            self.assertEqual(list(self.d.iteritems()),
+                            [('abc', 'lmno'), ('xyz', 'pdq')])
         self.assertEqual(self.d.items(),
                         [('abc', 'lmno'), ('xyz', 'pdq')])
         self.assertEqual(self.d.values(), ['lmno', 'pdq'])
@@ -64,9 +67,11 @@ class TempSqliteDictTest(unittest.TestCase):
         '''
         self.d.update(p='x', q='y', r='z')
         self.assertEqual(len(self.d), 3)
-        self.assertEqual(self.d.items(),
-                        [('q', 'y'), ('p', 'x'), ('r', 'z')])
-        self.assertEqual(list(self.d), ['q', 'p', 'r'])
+        # As far as I know dicts does not need to return
+        # the elements in a specified order (sort() is required )
+        self.assertEqual(self.d.items().sort(),
+                        [('q', 'y'), ('p', 'x'), ('r', 'z')].sort())
+        self.assertEqual(list(self.d).sort(), ['q', 'p', 'r'].sort())
 
     def test_handling_errors(self):
         ''' test_handling_errors
