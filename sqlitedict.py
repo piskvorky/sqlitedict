@@ -35,12 +35,9 @@ import logging
 from threading import Thread
 from sys import version_info
 
-# Minimum version required version 2.5;
-# python 2.5 has a syntax which is already a bit incompatible with Py3
-# but newer pythons in  2 series ara easily forward compatible
-_major_version=version_info[0]
-if _major_version<3: # py <= 2.x
-  if version_info[1]<5: # py <= 2.4
+_major_version = version_info[0]
+if _major_version < 3: # py <= 2.x
+  if version_info[1] < 5: # py <= 2.4
     raise ImportError("sqlitedict requires python 2.5 or higher (python 3.3 or higher supported)")
 
 try:
@@ -256,11 +253,11 @@ class SqliteDict(DictClass):
 
 # Adding extra methods for python 2 compatibility (at import time)
 if _major_version == 2:
-    setattr(SqliteDict,"iterkeys",lambda self: self.keys())
-    setattr(SqliteDict,"itervalues",lambda self: self.values())
-    setattr(SqliteDict,"iteritems",lambda self: self.items())
-    SqliteDict.__nonzero__ = SqliteDict.__bool__#SqliteDict.__bool__
-    del SqliteDict.__bool__ #not needed and confusing
+    setattr(SqliteDict, "iterkeys", lambda self: self.keys())
+    setattr(SqliteDict, "itervalues", lambda self: self.values())
+    setattr(SqliteDict, "iteritems", lambda self: self.items())
+    SqliteDict.__nonzero__ = SqliteDict.__bool__
+    del SqliteDict.__bool__ # not needed and confusing
 #endclass SqliteDict
 
 class SqliteMultithread(Thread):
