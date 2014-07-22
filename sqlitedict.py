@@ -35,13 +35,13 @@ import logging
 from threading import Thread
 from sys import version_info
 
-# Minimum version required version 2.6;
-# python 2.5 has syntax which is already incompatible
-# but Py 2.7 is backwards compatible
+# Minimum version required version 2.5;
+# python 2.5 has a syntax which is already incompatible
+# but newer pythons in  2 series ara easily forward compatible
 _major_version=version_info[0]
 if _major_version<3: # py <= 2.x
-  if version_info[1]<6: # py <= 2.5
-    raise ImportError("sqlitedict requires python 2.6, python 3.3 or higher")
+  if version_info[1]<5: # py <= 2.4
+    raise ImportError("sqlitedict requires python 2.5 or higher (python 3.3 or higher supported)")
 
 try:
     from cPickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
@@ -237,7 +237,8 @@ class SqliteDict(DictClass):
         logger.info("deleting %s" % self.filename)
         try:
             os.remove(self.filename)
-        except IOError as e:
+        except IOError:
+            _, e, _ = sys.exc_info() # python 2.5: "Exception as e"
             logger.warning("failed to delete %s: %s" % (self.filename, str(e)))
 
     def __del__(self):
