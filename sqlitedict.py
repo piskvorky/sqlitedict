@@ -35,6 +35,12 @@ import logging
 from threading import Thread
 from sys import version_info
 
+# Minimum version required version 2.6
+_major_version=version_info[0]
+if _major_version<3: # py <= 2.x
+  if version_info[1]<6: # py <= 2.5
+    raise ImportError("sqlitedict requires python 2.6, python 3.3 or higher")
+
 try:
     from cPickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
 except ImportError:
@@ -246,7 +252,7 @@ class SqliteDict(DictClass):
             pass
 
 # Adding extra methods for python 2 compatibility (at import time)
-if version_info.major == 2:
+if _major_version == 2:
     setattr(SqliteDict,"iterkeys",lambda self: self.keys())
     setattr(SqliteDict,"itervalues",lambda self: self.values())
     setattr(SqliteDict,"iteritems",lambda self: self.items())
