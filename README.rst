@@ -13,13 +13,13 @@ sqlitedict -- persistent ``dict``, backed-up by SQLite and pickle
 .. _Downloads: https://pypi.python.org/pypi/sqlitedict
 .. _License: https://pypi.python.org/pypi/sqlitedict
 
-A lightweight wrapper around Python's sqlite3 database, with a dict-like interface
-and multi-thread access support:
+A lightweight wrapper around Python's sqlite3 database with a simple, Pythonic
+dict-like interface and support for multi-thread access:
 
 .. code-block:: python
 
   >>> from sqlitedict import SqliteDict
-  >>> mydict = SqliteDict('./my_db.sqlite', autocommit=True) as :
+  >>> mydict = SqliteDict('./my_db.sqlite', autocommit=True)
   >>> mydict['some_key'] = any_picklable_object
   >>> print mydict['some_key']  # prints the new value
   >>> for key, value in mydict.iteritems():
@@ -36,13 +36,13 @@ don't forget to call ``mydict.commit()`` when done with a transaction:
 .. code-block:: python
 
   >>> # using SqliteDict as context manager works too (RECOMMENDED)
-  >>> with SqliteDict('./my_db.sqlite') as mydict:  # no autocommit=True here
+  >>> with SqliteDict('./my_db.sqlite') as mydict:  # note no autocommit=True
   ...     mydict['some_key'] = u"first value"
   ...     mydict['another_key'] = range(10)
   ...     mydict.commit()
   ...     mydict['some_key'] = u"new value"
   ...     # no explicit commit here
-  >>> with SqliteDict('./my_db.sqlite') as mydict:  # open the same DB
+  >>> with SqliteDict('./my_db.sqlite') as mydict:  # re-open the same DB
   ...     print mydict['some_key']  # outputs 'first value', not 'new value'
 
 
@@ -91,8 +91,8 @@ explicitly assign the mutated object back to SqliteDict to achieve the same effe
 .. code-block:: python
 
   >>> val = mydict.get('new_key', [])
-  >>> val.append(1)
-  >>> mydict['new_key'] = val
+  >>> val.append(1)  # sqlite DB not updated here!
+  >>> mydict['new_key'] = val  # now updated
 
 
 For developers
