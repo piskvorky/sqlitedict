@@ -30,6 +30,7 @@ setup(
 
     # there is a bug in python2.5, preventing distutils from using any non-ascii characters :( http://bugs.python.org/issue2562
     author = 'Radim Rehurek, Victor R. Escobar, Andrey Usov, Prasanna Swaminathan',
+    author_email = "various",
     maintainer = 'Radim Rehurek',
     maintainer_email = 'me@radimrehurek.com',
 
@@ -38,19 +39,18 @@ setup(
 
     keywords = 'sqlite, persistent dict, multithreaded',
 
-    license = 'public domain',
+    license = 'Apache 2.0',
     platforms = 'any',
 
     classifiers = [ # from http://pypi.python.org/pypi?%3Aaction=list_classifiers
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
         'Intended Audience :: Developers',
-        'License :: Public Domain',
+        'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 2.5', # I wonder if there is a shortcut for that
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 2.8',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Topic :: Database :: Front-Ends',
