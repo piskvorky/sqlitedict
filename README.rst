@@ -6,9 +6,9 @@ sqlitedict -- persistent ``dict``, backed-up by SQLite and pickle
 |Downloads|_
 |License|_
 
-.. |Travis| image:: https://api.travis-ci.org/piskvorky/sqlitedict.png?branch=master
-.. |Downloads| image:: https://pypip.in/d/sqlitedict/badge.png?style=flat
-.. |License| image:: https://pypip.in/license/sqlitedict/badge.png?style=flat
+.. |Travis| image:: https://img.shields.io/travis/piskvorky/sqlitedict.svg
+.. |Downloads| image:: https://img.shields.io/pypi/dm/sqlitedict.svg
+.. |License| image:: https://img.shields.io/pypi/l/sqlitedict.svg
 .. _Travis: https://travis-ci.org/piskvorky/sqlitedict
 .. _Downloads: https://pypi.python.org/pypi/sqlitedict
 .. _License: https://pypi.python.org/pypi/sqlitedict
