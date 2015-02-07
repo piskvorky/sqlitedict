@@ -21,7 +21,7 @@ and multi-thread access support::
 >>> print mydict['some_key']
 >>> print len(mydict) # etc... all dict functions work
 
-Pickle is used internally to serialize the values. Keys are strings.
+Pickle is used internally to (de)serialize the values. Keys are strings.
 
 If you don't use autocommit (default is no autocommit for performance), then
 don't forget to call ``mydict.commit()`` when done with a transaction.

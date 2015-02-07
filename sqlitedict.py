@@ -6,10 +6,10 @@
 #
 # http://opensource.org/licenses/apache2.0.php
 #
-# This code was inspired in the next publications:
+# This code was inspired by:
 #  * http://code.activestate.com/recipes/576638-draft-for-an-sqlite3-based-dbm/
 #  * http://code.activestate.com/recipes/526618/
-#
+
 """
 A lightweight wrapper around Python's sqlite3 database, with a dict-like interface
 and multi-thread access support::
@@ -28,16 +28,16 @@ don't forget to call `mydict.commit()` when done with a transaction.
 
 import sqlite3
 import os
+import sys
 import tempfile
 import random
 import logging
 
 from threading import Thread
-from sys import version_info
 
-_major_version = version_info[0]
+_major_version = sys.version_info[0]
 if _major_version < 3: # py <= 2.x
-  if version_info[1] < 5: # py <= 2.4
+  if sys.version_info[1] < 5: # py <= 2.4
     raise ImportError("sqlitedict requires python 2.5 or higher (python 3.3 or higher supported)")
 
 try:
@@ -235,8 +235,7 @@ class SqliteDict(DictClass):
         try:
             os.remove(self.filename)
         except IOError:
-            _, e, _ = sys.exc_info() # python 2.5: "Exception as e"
-            logger.warning("failed to delete %s: %s" % (self.filename, str(e)))
+            logger.exception("failed to delete %s" % (self.filename))
 
     def __del__(self):
         # like close(), but assume globals are gone by now (such as the logger)
@@ -259,6 +258,7 @@ if _major_version == 2:
     SqliteDict.__nonzero__ = SqliteDict.__bool__
     del SqliteDict.__bool__ # not needed and confusing
 #endclass SqliteDict
+
 
 class SqliteMultithread(Thread):
     """
