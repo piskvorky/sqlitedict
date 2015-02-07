@@ -18,17 +18,33 @@ and multi-thread access support:
 
 .. code-block:: python
 
-  >>> with SqliteDict('./my_db.sqlite', autocommit=True) as mydict:
-  ...     mydict['some_key'] = any_picklable_object
-  ...     print mydict['some_key']  # prints the new value
-  ...     for key, value in mydict.iteritems():
-  ...         print key, value
-  ...     print len(mydict) # etc... all dict functions work
+  >>> from sqlitedict import SqliteDict
+  >>> mydict = SqliteDict('./my_db.sqlite', autocommit=True) as :
+  >>> mydict['some_key'] = any_picklable_object
+  >>> print mydict['some_key']  # prints the new value
+  >>> for key, value in mydict.iteritems():
+  >>>     print key, value
+  >>> print len(mydict) # etc... all dict functions work
+  >>> mydict.close()
 
-Pickle is used internally to (de)serialize the values. Keys are strings.
+Pickle is used internally to (de)serialize the values. Keys are arbitrary strings,
+values arbitrary pickle-able objects.
 
 If you don't use autocommit (default is no autocommit for performance), then
-don't forget to call ``mydict.commit()`` when done with a transaction.
+don't forget to call ``mydict.commit()`` when done with a transaction:
+
+.. code-block:: python
+
+  >>> # using SqliteDict as context manager works too (RECOMMENDED)
+  >>> with SqliteDict('./my_db.sqlite') as mydict:  # no autocommit here
+  ...     mydict['some_key'] = u"first value"
+  ...     mydict['another_key'] = u"first value"
+  ...     mydict.commit()
+  ...     mydict['some_key'] = u"new value"
+  ...     # no explicit commit here
+  >>> with SqliteDict('./my_db.sqlite') as mydict:  # open the same DB
+  ...     print mydict['some_key']  # outputs 'first value', not 'new value'
+
 
 Features
 --------
