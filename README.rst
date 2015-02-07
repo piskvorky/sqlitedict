@@ -36,9 +36,9 @@ don't forget to call ``mydict.commit()`` when done with a transaction:
 .. code-block:: python
 
   >>> # using SqliteDict as context manager works too (RECOMMENDED)
-  >>> with SqliteDict('./my_db.sqlite') as mydict:  # no autocommit here
+  >>> with SqliteDict('./my_db.sqlite') as mydict:  # no autocommit=True here
   ...     mydict['some_key'] = u"first value"
-  ...     mydict['another_key'] = u"first value"
+  ...     mydict['another_key'] = range(10)
   ...     mydict.commit()
   ...     mydict['some_key'] = u"new value"
   ...     # no explicit commit here
@@ -83,9 +83,10 @@ Standard Python document strings are inside the module:
 
 (but it's just ``dict`` with a commit, really).
 
-**Beware**: because of Python semantics, ``sqlitedict`` cannot know when a mutable persistent-dictionary entry was modified.
-For example, ``mydict.setdefault('new_key', []).append(1)`` will leave ``mydict['new_key']`` equal to empty list, not ``[1]``.
-You'll need to explicitly assign the mutated object back to achieve the same effect:
+**Beware**: because of Python semantics, ``sqlitedict`` cannot know when a mutable
+SqliteDict-backed entry was modified in RAM. For example, ``mydict.setdefault('new_key', []).append(1)``
+will leave ``mydict['new_key']`` equal to empty list, not ``[1]``. You'll need to
+explicitly assign the mutated object back to SqliteDict to achieve the same effect:
 
 .. code-block:: python
 
