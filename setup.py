@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2011 Radim Rehurek <radimrehurek@seznam.cz>
+# This code is distributed under the terms and conditions
+# from the Apache License, Version 2.0
+#
+# http://opensource.org/licenses/apache2.0.php
 
 """
 Run with:
@@ -26,8 +29,10 @@ setup(
     py_modules = ['sqlitedict'],
 
     # there is a bug in python2.5, preventing distutils from using any non-ascii characters :( http://bugs.python.org/issue2562
-    author = 'Radim Rehurek, Victor R. Escobar', # u'Radim Řehůřek, Víctor R. Escobar' <-- missing encoding support
-    author_email = 'radimrehurek@seznam.cz, victor.r.e.o@gmail.com',
+    author = 'Radim Rehurek, Victor R. Escobar, Andrey Usov, Prasanna Swaminathan',
+    maintainer = 'Radim Rehurek',
+    maintainer_email = 'me@radimrehurek.com',
+
     url = 'https://github.com/piskvorky/sqlitedict',
     download_url = 'http://pypi.python.org/pypi/sqlitedict',
 

@@ -95,4 +95,5 @@ issues or pull requests there.
 
 ----
 
-``sqlitedict`` is released as public domain, you may do with it as you please. Hack away.
+``sqlitedict`` is open source software released under the `Apache 2.0 license <http://opensource.org/licenses/apache2.0.php>`_.
+Copyright (c) 2011-now Radim Rehurek and authors.
