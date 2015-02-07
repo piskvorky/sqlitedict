@@ -69,9 +69,9 @@ class TempSqliteDictTest(unittest.TestCase):
         self.assertEqual(len(self.d), 3)
         # As far as I know dicts does not need to return
         # the elements in a specified order (sort() is required )
-        self.assertEqual(self.d.items().sort(),
-                        [('q', 'y'), ('p', 'x'), ('r', 'z')].sort())
-        self.assertEqual(list(self.d).sort(), ['q', 'p', 'r'].sort())
+        self.assertEqual(sorted(self.d.items()),
+                        sorted([('q', 'y'), ('p', 'x'), ('r', 'z')]))
+        self.assertEqual(sorted(list(self.d)), sorted(['q', 'p', 'r']))
 
     def test_handling_errors(self):
         ''' test_handling_errors

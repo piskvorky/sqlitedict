@@ -21,7 +21,7 @@ and multi-thread access support::
 >>> print mydict['some_key']
 >>> print len(mydict) # etc... all dict functions work
 
-Pickle is used internally to serialize the values. Keys are strings.
+Pickle is used internally to (de)serialize the values. Keys are strings.
 
 If you don't use autocommit (default is no autocommit for performance), then
 don't forget to call ``mydict.commit()`` when done with a transaction.
@@ -41,15 +41,15 @@ Concurrent requests are still serialized internally, so this "multithreaded supp
 Installation
 ------------
 
-The module has no dependencies beyond 2.5 <= Python and should work without problems in python 3 series (tested on 3.3 and forward)
+The module has no dependencies beyond Python itself. The minimum Python version is 2.5, continuously tested on Python 2.6, 2.7, 3.3 and 3.4 `on Travis <https://travis-ci.org/piskvorky/sqlitedict>`_.
+
 Install or upgrade with:
 
-    sudo easy_install -U sqlitedict
+    easy_install -U sqlitedict
 
 or from the `source tar.gz <http://pypi.python.org/pypi/sqlitedict>`_ ::
 
-    python sqlitedict.py # run some tests
-    sudo python setup.py install
+    python setup.py install
 
 Documentation
 -------------
@@ -95,4 +95,5 @@ issues or pull requests there.
 
 ----
 
-``sqlitedict`` is released as public domain, you may do with it as you please. Hack away.
+``sqlitedict`` is open source software released under the `Apache 2.0 license <http://opensource.org/licenses/apache2.0.php>`_.
+Copyright (c) 2011-now Radim Rehurek and authors.
