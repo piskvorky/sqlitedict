@@ -14,12 +14,14 @@ sqlitedict -- persistent ``dict``, backed-up by SQLite and pickle
 .. _License: https://pypi.python.org/pypi/sqlitedict
 
 A lightweight wrapper around Python's sqlite3 database, with a dict-like interface
-and multi-thread access support::
+and multi-thread access support:
 
->>> mydict = SqliteDict('some.db', autocommit=True) # the mapping will be persisted to file `some.db`
->>> mydict['some_key'] = any_picklable_object
->>> print mydict['some_key']
->>> print len(mydict) # etc... all dict functions work
+.. code-block:: python
+
+  >>> mydict = SqliteDict('some.db', autocommit=True) # the mapping will be persisted to file `some.db`
+  >>> mydict['some_key'] = any_picklable_object
+  >>> print mydict['some_key']
+  >>> print len(mydict) # etc... all dict functions work
 
 Pickle is used internally to (de)serialize the values. Keys are strings.
 
@@ -43,31 +45,35 @@ Installation
 
 The module has no dependencies beyond Python itself. The minimum Python version is 2.5, continuously tested on Python 2.6, 2.7, 3.3 and 3.4 `on Travis <https://travis-ci.org/piskvorky/sqlitedict>`_.
 
-Install or upgrade with:
+Install or upgrade with::
 
     easy_install -U sqlitedict
 
-or from the `source tar.gz <http://pypi.python.org/pypi/sqlitedict>`_ ::
+or from the `source tar.gz <http://pypi.python.org/pypi/sqlitedict>`_::
 
     python setup.py install
 
 Documentation
 -------------
 
-Standard Python document strings are inside the module::
+Standard Python document strings are inside the module:
 
->>> import sqlitedict
->>> help(sqlitedict)
+.. code-block:: python
+
+  >>> import sqlitedict
+  >>> help(sqlitedict)
 
 (but it's just ``dict`` with a commit, really).
 
 **Beware**: because of Python semantics, ``sqlitedict`` cannot know when a mutable persistent-dictionary entry was modified.
 For example, ``mydict.setdefault('new_key', []).append(1)`` will leave ``mydict['new_key']`` equal to empty list, not ``[1]``.
-You'll need to explicitly assign the mutated object back to achieve the same effect::
+You'll need to explicitly assign the mutated object back to achieve the same effect:
 
->>> val = mydict.get('new_key', [])
->>> val.append(1)
->>> mydict['new_key'] = val
+.. code-block:: python
+
+  >>> val = mydict.get('new_key', [])
+  >>> val.append(1)
+  >>> mydict['new_key'] = val
 
 
 For developers
@@ -75,16 +81,16 @@ For developers
 
 Install::
 
-# pip install nose
-# pip install coverage
+    # pip install nose
+    # pip install coverage
 
 To perform all tests::
 
-# make test-all
+   # make test-all
 
 To perform all tests with coverage::
 
-# make test-all-with-coverage
+   # make test-all-with-coverage
 
 
 Comments, bug reports
