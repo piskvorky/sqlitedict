@@ -18,10 +18,12 @@ and multi-thread access support:
 
 .. code-block:: python
 
-  >>> mydict = SqliteDict('some.db', autocommit=True) # the mapping will be persisted to file `some.db`
-  >>> mydict['some_key'] = any_picklable_object
-  >>> print mydict['some_key']
-  >>> print len(mydict) # etc... all dict functions work
+  >>> with SqliteDict('./my_db.sqlite', autocommit=True) as mydict:
+  ...     mydict['some_key'] = any_picklable_object
+  ...     print mydict['some_key']  # prints the new value
+  ...     for key, value in mydict.iteritems():
+  ...         print key, value
+  ...     print len(mydict) # etc... all dict functions work
 
 Pickle is used internally to (de)serialize the values. Keys are strings.
 

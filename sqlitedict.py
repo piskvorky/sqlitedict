@@ -62,7 +62,7 @@ logger = logging.getLogger(__name__)
 
 
 def open(*args, **kwargs):
-    """See documentation of the SqlDict class."""
+    """See documentation of the SqliteDict class."""
     return SqliteDict(*args, **kwargs)
 
 
