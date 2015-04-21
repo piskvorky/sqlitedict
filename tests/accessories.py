@@ -1,6 +1,7 @@
 """Accessories for test cases."""
 # std imports
 import unittest
+import contesxtlib
 import os
 import sys
 

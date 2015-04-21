@@ -11,7 +11,6 @@ unittest.TestCase subclasses.
 
 # std imports
 import unittest
-import contextlib
 
 # local
 import sqlitedict
