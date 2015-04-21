@@ -18,6 +18,13 @@ class TestCaseBackport(unittest.TestCase):
     """Backport python2.7 TestCase methods (in leiu of unittest2, or better, pytest)."""
     if sys.version_info < (2, 7):
 
+        def assertNotIn(self, member, container, msg=None):
+            """Just like self.assertTrue(a not in b), but with a nicer default message."""
+            if member in container:
+                standardMsg = '%s unexpectedly found in %s' % (safe_repr(member),
+                                                            safe_repr(container))
+                self.fail(self._formatMessage(msg, standardMsg))
+
         def assertIn(self, member, container, msg=None):
             """Just like self.assertTrue(a in b), but with a nicer default message."""
             if member not in container:
@@ -59,6 +66,3 @@ class TestCaseBackport(unittest.TestCase):
                 assert re.match(pattern, str(e))
             else:
                 raise AssertionError("%s was not raised" % excClass)
-
-
-

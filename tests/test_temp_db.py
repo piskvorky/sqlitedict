@@ -84,5 +84,7 @@ class TempSqliteDictTest(TestCaseBackport):
         def remove_nonexists(d, k):
             del d[k]
 
-        self.assertRaises(KeyError, remove_nonexists, self.d, 'abc')
-        self.assertRaises(KeyError, get_value, self.d, 'abc')
+        with self.assertRaises(KeyError):
+            remove_nonexists(self.d, 'abc')
+        with self.assertRaises(KeyError):
+            get_value(self.d, 'abc')

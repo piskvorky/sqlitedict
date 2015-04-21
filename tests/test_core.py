@@ -10,7 +10,7 @@ from test_temp_db import TempSqliteDictTest
 from accessories import norm_file, TestCaseBackport
 
 
-class SqliteMiscTest(unittest.TestCase):
+class SqliteMiscTest(TestCaseBackport):
 
     def test_with_statement(self):
         """Verify using sqlitedict as a contextmanager . """
