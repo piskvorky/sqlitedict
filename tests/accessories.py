@@ -15,8 +15,16 @@ def norm_file(fname):
 
 
 class TestCaseBackport(unittest.TestCase):
-    """Backport unittest.TestCase.assertRaises for python2.5 and 2.6."""
+    """Backport assertRaises and assertIn for python2.5 and 2.6."""
     if sys.version_info < (2, 7):
+
+        def assertIn(self, member, container, msg=None):
+            """Just like self.assertTrue(a in b), but with a nicer default message."""
+            if member not in container:
+                standardMsg = '%s not found in %s' % (safe_repr(member),
+                                                      safe_repr(container))
+                self.fail(self._formatMessage(msg, standardMsg))
+
         @contextlib.contextmanager
         def assertRaises(self, excClass):
             try:
