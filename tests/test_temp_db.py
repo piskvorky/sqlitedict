@@ -15,7 +15,7 @@ class TempSqliteDictTest(unittest.TestCase):
     def test_create_sqlitedict(self):
         ''' test_create_sqlitedict
         '''
-        self.assertTrue(isinstance(self.d, sqlitedict.SqliteDict))
+        self.assertIsInstance(self.d, sqlitedict.SqliteDict)
         self.assertEqual(dict(self.d), {})
         self.assertEqual(list(self.d), [])
         self.assertEqual(len(self.d), 0)
