@@ -17,8 +17,6 @@ class SqliteDict_cPickleImportTest(TestCaseBackport):
             def find_module(self, fullname, path=None):
                 if fullname in self.module_names:
                     return self
-                if fullname == 'sqlitedict':
-                    return orig_sqlitedict
                 return None
 
             def load_module(self, name):
@@ -29,7 +27,7 @@ class SqliteDict_cPickleImportTest(TestCaseBackport):
         sys.modules.pop('pickle', None)
 
         # add our custom importer
-        sys.meta_path = [FauxMissingImport('cPickle')]
+        sys.meta_path.insert(0, FauxMissingImport('cPickle'))
 
     def tearDown(self):
         sys.meta_path = self.orig_meta_path
@@ -37,13 +35,8 @@ class SqliteDict_cPickleImportTest(TestCaseBackport):
             sys.modules['sqlitedict'] = self.orig_sqlitedict
 
     def test_cpickle_fallback_to_pickle(self):
-        if sys.version_info[0] > 2:  # py >= 3.x
-            # our faux importer doesn't work with python3.x
-            from nose.plugins.skip import SkipTest
-            raise SkipTest
-
         # exercise,
-        __import__("sqlitedict")
+        sqlitedict = __import__("sqlitedict")
         # verify,
         self.assertIn('pickle', sys.modules.keys())
         self.assertIs(sqlitedict.dumps, sys.modules['pickle'].dumps)
