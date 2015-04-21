@@ -8,7 +8,7 @@ class SqliteDict_cPickleImportTest(TestCaseBackport):
     """Verify fallback to 'pickle' module when 'cPickle' is not found."""
     def setUp(self):
         self.orig_meta_path = sys.meta_path
-        self.orig_sqlitedict = sys.modules.pop('sqlitedict', None)
+        self.orig_sqlitedict = orig_sqlitedict = sys.modules.pop('sqlitedict', None)
 
         class FauxMissingImport(object):
             def __init__(self, *args):
@@ -17,6 +17,8 @@ class SqliteDict_cPickleImportTest(TestCaseBackport):
             def find_module(self, fullname, path=None):
                 if fullname in self.module_names:
                     return self
+                if fullname == 'sqlitedict':
+                    return orig_sqlitedict
                 return None
 
             def load_module(self, name):
@@ -35,13 +37,16 @@ class SqliteDict_cPickleImportTest(TestCaseBackport):
             sys.modules['sqlitedict'] = self.orig_sqlitedict
 
     def test_cpickle_fallback_to_pickle(self):
+        if sys.version_info[0] > 2:  # py >= 3.x
+            # our faux importer doesn't work with python3.x
+            from nose.plugins.skip import SkipTest
+            raise SkipTest
+
         # exercise,
-        import sqlitedict
+        __import__("sqlitedict")
         # verify,
         self.assertIn('pickle', sys.modules.keys())
         self.assertIs(sqlitedict.dumps, sys.modules['pickle'].dumps)
-
-
 
 
 class SqliteDictPython24Test(TestCaseBackport):
@@ -60,4 +65,4 @@ class SqliteDictPython24Test(TestCaseBackport):
 
     def test_py24_error(self):
         with self.assertRaises(ImportError):
-            import sqlitedict
+            __import__("sqlitedict")
