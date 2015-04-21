@@ -36,7 +36,7 @@ class SqliteDict_cPickleImportTest(TestCaseBackport):
 
     def test_cpickle_fallback_to_pickle(self):
         # exercise,
-        sqlitedict = __import__('sqlitedict')
+        import sqlitedict
         # verify,
         self.assertIn('pickle', sys.modules.keys())
         self.assertIs(sqlitedict.dumps, sys.modules['pickle'].dumps)
@@ -60,4 +60,4 @@ class SqliteDictPython24Test(TestCaseBackport):
 
     def test_py24_error(self):
         with self.assertRaises(ImportError):
-            __import__('sqlitedict')
+            import sqlitedict
