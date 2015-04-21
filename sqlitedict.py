@@ -32,6 +32,7 @@ import sys
 import tempfile
 import random
 import logging
+import traceback
 
 from threading import Thread
 
@@ -206,16 +207,27 @@ class SqliteDict(DictClass):
         self.conn.execute(CLEAR_ALL)
         self.conn.commit()
 
-    def commit(self):
+    def commit(self, blocking=True):
+        """
+        Persist all data to disk.
+
+        When `blocking` is False, the commit command is queued, but the data is
+        not guaranteed persisted (default implication when autocommit=True).
+        """
         if self.conn is not None:
-            self.conn.commit()
+            self.conn.commit(blocking)
     sync = commit
 
-    def close(self):
-        logger.debug("closing %s" % self)
-        if self.conn is not None:
+    def close(self, do_log=True):
+        if do_log:
+            logger.debug("closing %s" % self)
+        if hasattr(self, 'conn') and self.conn is not None:
             if self.conn.autocommit:
-                self.conn.commit()
+                # typically calls to commit are non-blocking when autocommit is
+                # used.  However, we need to block on close() to ensure any
+                # awaiting exceptions are handled and that all data is
+                # persisted to disk before returning.
+                self.conn.commit(blocking=True)
             self.conn.close()
             self.conn = None
         if self.in_temp:
@@ -234,21 +246,12 @@ class SqliteDict(DictClass):
         logger.info("deleting %s" % self.filename)
         try:
             os.remove(self.filename)
-        except IOError:
+        except (OSError, IOError):
             logger.exception("failed to delete %s" % (self.filename))
 
     def __del__(self):
-        # like close(), but assume globals are gone by now (such as the logger)
-        try:
-            if self.conn is not None:
-                if self.conn.autocommit:
-                    self.conn.commit()
-                self.conn.close()
-                self.conn = None
-            if self.in_temp:
-                os.remove(self.filename)
-        except:
-            pass
+        # like close(), but assume globals are gone by now (do not log!)
+        self.close(do_log=False)
 
 # Adding extra methods for python 2 compatibility (at import time)
 if _major_version == 2:
@@ -273,8 +276,11 @@ class SqliteMultithread(Thread):
         self.filename = filename
         self.autocommit = autocommit
         self.journal_mode = journal_mode
-        self.reqs = Queue() # use request queue of unlimited size
+        # use request queue of unlimited size
+        self.reqs = Queue()
         self.setDaemon(True) # python2.5-compatible
+        self.exception = None
+        self.log = logging.getLogger('sqlitedict.SqliteMultithread')
         self.start()
 
     def run(self):
@@ -286,32 +292,112 @@ class SqliteMultithread(Thread):
         conn.text_factory = str
         cursor = conn.cursor()
         cursor.execute('PRAGMA synchronous=OFF')
+
+        res = None
         while True:
-            req, arg, res = self.reqs.get()
+            req, arg, res, outer_stack = self.reqs.get()
             if req == '--close--':
+                assert res, ('--close-- without return queue', res)
                 break
             elif req == '--commit--':
                 conn.commit()
+                if res:
+                    res.put('--no more--')
             else:
-                cursor.execute(req, arg)
+                try:
+                    cursor.execute(req, arg)
+                except Exception as err:
+                    self.exception = (e_type, e_value, e_tb) = sys.exc_info()
+                    inner_stack = traceback.extract_stack()
+
+                    # An exception occurred in our thread, but we may not
+                    # immediately able to throw it in our calling thread, if it has
+                    # no return `res` queue: log as level ERROR both the inner and
+                    # outer exception immediately.
+                    #
+                    # Any iteration of res.get() or any next call will detect the
+                    # inner exception and re-raise it in the calling Thread; though
+                    # it may be confusing to see an exception for an unrelated
+                    # statement, an ERROR log statement from the 'sqlitedict.*'
+                    # namespace contains the original outer stack location.
+                    self.log.error('Inner exception:')
+                    map(self.log.error,
+                        filter(None, '\n'.join(
+                            traceback.format_list(inner_stack)
+                        ).split('\n'))
+                    )
+                    self.log.error('')  # deliniate traceback & exception w/blank line
+                    map(self.log.error,
+                        traceback.format_exception_only(e_type, e_value))
+
+                    self.log.error('')  # exception & outer stack w/blank line
+                    self.log.error('Outer stack:')
+                    map(self.log.error,
+                        filter(None, '\n'.join(
+                            traceback.format_list(outer_stack)
+                        ).split('\n'))
+                    )
+                    self.log.error('Exception will be re-raised at next call.')
+
+
                 if res:
                     for rec in cursor:
                         res.put(rec)
                     res.put('--no more--')
+
                 if self.autocommit:
-                    conn.commit()
+                    conn.commit(blocking=False)
+
+        self.log.debug('received: %s, send: --no more--', req)
         conn.close()
+        res.put('--no more--')
+
+    def check_raise_error(self):
+        """
+        Check for and raise exception for any previous sqlite query.
+
+        For the `execute*` family of method calls, such calls are non-blocking and any
+        exception raised in the thread cannot be handled by the calling Thread (usually
+        MainThread).  This method is called on `close`, and prior to any subsequent
+        calls to the `execute*` methods to check for and raise an exception in a
+        previous call to the MainThread.
+        """
+        if self.exception:
+            e_type, e_value, e_tb = self.exception
+
+            # clear self.exception, if the caller decides to handle such
+            # exception, we should not repeatedly re-raise it.
+            self.exception = None
+
+            self.log.error('An exception occurred from a previous statement, view '
+                           'the logging namespace "sqlitedict" for outer stack.')
+
+            # The third argument to raise is the traceback object, and it is
+            # substituted instead of the current location as the place where
+            # the exception occurred, this is so that when using debuggers such
+            # as `pdb', or simply evaluating the naturally raised traceback, we
+            # retain the original (inner) location of where the exception
+            # occurred.
+            raise e_type, e_value, e_tb
+
 
     def execute(self, req, arg=None, res=None):
         """
         `execute` calls are non-blocking: just queue up the request and return immediately.
-
         """
-        self.reqs.put((req, arg or tuple(), res))
+        self.check_raise_error()
+
+        # NOTE: This might be a lot of information to pump into an input
+        # queue, affecting performance.  I've also seen earlier versions of
+        # jython take a severe performance impact for throwing exceptions
+        # so often.
+        stack = traceback.extract_stack()[:-1]
+        self.reqs.put((req, arg or tuple(), res, stack))
 
     def executemany(self, req, items):
         for item in items:
             self.execute(req, item)
+        self.check_raise_error()
 
     def select(self, req, arg=None):
         """
@@ -320,12 +406,12 @@ class SqliteMultithread(Thread):
         The result of `select` starts filling up with values as soon as the
         request is dequeued, and although you can iterate over the result normally
         (`for res in self.select(): ...`), the entire result will be in memory.
-
         """
         res = Queue() # results of the select will appear as items in this queue
         self.execute(req, arg, res)
         while True:
             rec = res.get()
+            self.check_raise_error()
             if rec == '--no more--':
                 break
             yield rec
@@ -337,10 +423,21 @@ class SqliteMultithread(Thread):
         except StopIteration:
             return None
 
-    def commit(self):
-        self.execute('--commit--')
+    def commit(self, blocking=True):
+        if blocking:
+            # by default, we await completion of commit() unless
+            # blocking=False.  This ensures any available exceptions for any
+            # previous statement are thrown before returning, and that the
+            # data has actually persisted to disk!
+            self.select_one('--commit--')
+        else:
+            # otherwise, we fire and forget as usual.
+            self.execute('--commit--')
 
     def close(self):
-        self.execute('--close--')
+        # we abuse 'select' to "iter" over a "--close--" statement so that we
+        # can confirm the completion of close before joining the thread and
+        # returning (by semaphore '--no more--'
+        self.select_one('--close--')
         self.join()
 #endclass SqliteMultithread
