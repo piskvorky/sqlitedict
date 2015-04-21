@@ -4,7 +4,7 @@ import sys
 from accessories import TestCaseBackport
 
 
-class SqliteDict_cPickleImportTest(unittest.TestCase):
+class SqliteDict_cPickleImportTest(TestCaseBackport):
     """Verify fallback to 'pickle' module when 'cPickle' is not found."""
     def setUp(self):
         self.orig_meta_path = sys.meta_path
@@ -15,7 +15,6 @@ class SqliteDict_cPickleImportTest(unittest.TestCase):
                 self.module_names = args
 
             def find_module(self, fullname, path=None):
-                print(fullname)
                 if fullname in self.module_names:
                     return self
                 return None

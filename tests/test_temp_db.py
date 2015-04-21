@@ -1,10 +1,12 @@
 import unittest
 import sqlitedict
 
+from accessories import TestCaseBackport
+
 from sys import version_info
 _major_version=version_info[0]
 
-class TempSqliteDictTest(unittest.TestCase):
+class TempSqliteDictTest(TestCaseBackport):
 
     def setUp(self):
         self.d = sqlitedict.SqliteDict()

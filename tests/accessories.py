@@ -15,7 +15,7 @@ def norm_file(fname):
 
 
 class TestCaseBackport(unittest.TestCase):
-    """Backport assertRaises and assertIn for python2.5 and 2.6."""
+    """Backport python2.7 TestCase methods (in leiu of unittest2, or better, pytest)."""
     if sys.version_info < (2, 7):
 
         def assertIn(self, member, container, msg=None):
@@ -23,6 +23,21 @@ class TestCaseBackport(unittest.TestCase):
             if member not in container:
                 standardMsg = '%s not found in %s' % (safe_repr(member),
                                                       safe_repr(container))
+                self.fail(self._formatMessage(msg, standardMsg))
+
+        def assertIs(self, expr1, expr2, msg=None):
+            """Just like self.assertTrue(a is b), but with a nicer default message."""
+            if expr1 is not expr2:
+                standardMsg = '%s is not %s' % (safe_repr(expr1),
+                                                 safe_repr(expr2))
+                self.fail(self._formatMessage(msg, standardMsg))
+
+
+        def assertIsInstance(self, obj, cls, msg=None):
+            """Same as self.assertTrue(isinstance(obj, cls)), with a nicer
+            default message."""
+            if not isinstance(obj, cls):
+                standardMsg = '%s is not an instance of %r' % (safe_repr(obj), cls)
                 self.fail(self._formatMessage(msg, standardMsg))
 
         @contextlib.contextmanager
