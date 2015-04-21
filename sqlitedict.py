@@ -346,7 +346,7 @@ class SqliteMultithread(Thread):
                     res.put('--no more--')
 
                 if self.autocommit:
-                    conn.commit(blocking=False)
+                    conn.commit()
 
         self.log.debug('received: %s, send: --no more--', req)
         conn.close()
