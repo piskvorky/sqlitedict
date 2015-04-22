@@ -14,10 +14,34 @@ sudo python ./setup.py install
 
 import os
 
+import subprocess
+import setuptools.command.develop
+
 from distutils.core import setup
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
+
+class SetupDevelop(setuptools.command.develop.develop):
+
+    """Docstring is overwritten."""
+
+    def run(self):
+        """
+        Prepare environment for development.
+
+        - Ensures 'nose' and 'coverage.py' are installed for testing.
+        - Call super()'s run method.
+        """
+        subprocess.check_call(('pip', 'install', 'nose', 'coverage'))
+
+        # Call super() (except develop is an old-style class, so we must call
+        # directly). The effect is that the development egg-link is installed.
+        setuptools.command.develop.develop.run(self)
+
+SetupDevelop.__doc__ = setuptools.command.develop.develop.__doc__
+
 
 
 setup(
@@ -55,5 +79,5 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Topic :: Database :: Front-Ends',
     ],
-
+    cmdclass={'develop': SetupDevelop},
 )
