@@ -1,10 +1,12 @@
 import unittest
 import sqlitedict
 
+from accessories import TestCaseBackport
+
 from sys import version_info
 _major_version=version_info[0]
 
-class TempSqliteDictTest(unittest.TestCase):
+class TempSqliteDictTest(TestCaseBackport):
 
     def setUp(self):
         self.d = sqlitedict.SqliteDict()
@@ -15,7 +17,7 @@ class TempSqliteDictTest(unittest.TestCase):
     def test_create_sqlitedict(self):
         ''' test_create_sqlitedict
         '''
-        self.assertTrue(isinstance(self.d, sqlitedict.SqliteDict))
+        self.assertIsInstance(self.d, sqlitedict.SqliteDict)
         self.assertEqual(dict(self.d), {})
         self.assertEqual(list(self.d), [])
         self.assertEqual(len(self.d), 0)
@@ -100,5 +102,7 @@ class TempSqliteDictTest(unittest.TestCase):
         def remove_nonexists(d, k):
             del d[k]
 
-        self.assertRaises(KeyError, remove_nonexists, self.d, 'abc')
-        self.assertRaises(KeyError, get_value, self.d, 'abc')
+        with self.assertRaises(KeyError):
+            remove_nonexists(self.d, 'abc')
+        with self.assertRaises(KeyError):
+            get_value(self.d, 'abc')

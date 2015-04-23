@@ -1,16 +1,12 @@
-import os
+# std import
+import tempfile
+import unittest
+
+# local
 import sqlitedict
-
 from test_temp_db import TempSqliteDictTest
-
-
-def norm_file(fname):
-    """Normalize test filename, creating a directory path to it if necessary"""
-    fname = os.path.abspath(fname)
-    dirname = os.path.dirname(fname)
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-    return fname
+from test_core import TestCaseBackport
+from accessories import norm_file
 
 
 class InMemorySqliteDictTest(TempSqliteDictTest):
@@ -58,5 +54,4 @@ class SqliteDictAutocommitTest(TempSqliteDictTest):
 
     def tearDown(self):
         self.d.terminate()
-
 
