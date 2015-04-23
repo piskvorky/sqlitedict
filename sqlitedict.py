@@ -96,13 +96,30 @@ def encode(obj):
     return sqlite3.Binary(dumps(obj, protocol=PICKLE_PROTOCOL))
 
 
+def decode_key(obj):
+    """Decode a dict key from SQLite."""
+    # Versions of sqlitedict 1.2.0 and prior coerced all keys of a dictionary
+    # to b'ytestring':  For unicode, any text was coerced as utf-8 encoded
+    # bytes, and for any other types, an exception was raised in the inner
+    # worker thread, causing all sqlitedict calls to block indefinitely.
+    #
+    # We provide a sort of "transient upgrade": Going forward, all keys stored
+    # are pickled in the same manner as their values: on retrieval, we attempt
+    # to unpickle them: if it fails, we assume an older version of sqlitedict,
+    # where the key is a utf-8 encoded b'ytestring', and return the key as-is.
+    #
+    # on next store, it will be pickled as its true type, and not coerced or
+    # throw an exception as it previously did.
+    try:
+        # sqlitedict 2.0+
+        return loads(bytes(obj))
+    except UnpicklingError:
+        # sqlitedict 1.2-
+        return obj
+
 def decode(obj):
     """Deserialize objects retrieved from SQLite."""
-    try:
-        return loads(bytes(obj))
-    except UnpicklingError:  # Because of the backward compatibility
-        logger.warning("Not a pickled string %s in sqlite", obj)
-        return obj
+    return loads(bytes(obj))
 
 
 class SqliteDict(DictClass):
@@ -184,7 +201,7 @@ class SqliteDict(DictClass):
 
     def keys(self):
         GET_KEYS = 'SELECT key FROM %s ORDER BY rowid' % self.tablename
-        return [decode(key[0]) for key in self.conn.select(GET_KEYS)]
+        return [decode_key(key[0]) for key in self.conn.select(GET_KEYS)]
 
     def values(self):
         GET_VALUES = 'SELECT value FROM %s ORDER BY rowid' % self.tablename
@@ -192,7 +209,7 @@ class SqliteDict(DictClass):
 
     def items(self):
         GET_ITEMS = 'SELECT key, value FROM %s ORDER BY rowid' % self.tablename
-        return [(decode(key), decode(value)) for key, value in self.conn.select(GET_ITEMS)]
+        return [(decode_key(key), decode(value)) for key, value in self.conn.select(GET_ITEMS)]
 
     def __contains__(self, key):
         HAS_ITEM = 'SELECT 1 FROM %s WHERE key = ?' % self.tablename
