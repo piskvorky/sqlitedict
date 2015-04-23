@@ -41,9 +41,9 @@ if _major_version < 3: # py <= 2.x
     raise ImportError("sqlitedict requires python 2.5 or higher (python 3.3 or higher supported)")
 
 try:
-    from cPickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
+    from cPickle import dumps, loads, UnpicklingError, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
 except ImportError:
-    from pickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
+    from pickle import dumps, loads, UnpicklingError, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
 
 # some Python 3 vs 2 imports
 try:
@@ -73,7 +73,11 @@ def encode(obj):
 
 def decode(obj):
     """Deserialize objects retrieved from SQLite."""
-    return loads(bytes(obj))
+    try:
+        return loads(bytes(obj))
+    except UnpicklingError:  # Because of the backward compatibility
+        logger.warning("Not a pickled string %s in sqlite", obj)
+        return obj
 
 
 class SqliteDict(DictClass):
