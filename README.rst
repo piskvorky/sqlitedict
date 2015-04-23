@@ -49,7 +49,7 @@ don't forget to call ``mydict.commit()`` when done with a transaction:
 Features
 --------
 
-* Values can be **any picklable objects** (uses ``cPickle`` with the highest protocol).
+* Keys and Values can be **any picklable objects** (uses ``cPickle`` with the highest protocol).
 * Support for **multiple tables** (=dicts) living in the same database file.
 * Support for **access from multiple threads** to the same connection (needed by e.g. Pyro).
   Vanilla sqlite3 gives you ``ProgrammingError: SQLite objects created in a thread can
