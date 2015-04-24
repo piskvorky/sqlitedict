@@ -31,10 +31,10 @@ class SetupDevelop(setuptools.command.develop.develop):
         """
         Prepare environment for development.
 
-        - Ensures 'nose' and 'coverage.py' are installed for testing.
+        - Ensures 'nose', 'coverage.py', and 'mock' are installed for testing.
         - Call super()'s run method.
         """
-        subprocess.check_call(('pip', 'install', 'nose', 'coverage'))
+        subprocess.check_call(('pip', 'install', 'nose', 'coverage', 'mock'))
 
         # Call super() (except develop is an old-style class, so we must call
         # directly). The effect is that the development egg-link is installed.
