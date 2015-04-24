@@ -194,7 +194,10 @@ class SqliteDict(DictClass):
         self.close()
 
     def __str__(self):
-        return "SqliteDict(%s)" % (self.conn.filename)
+        if self.conn is not None:
+            return "SqliteDict(%s)" % (self.conn.filename)
+        else:
+            return "SqliteDict(<None>)"
 
     def __repr__(self):
         return str(self) # no need of something complex
