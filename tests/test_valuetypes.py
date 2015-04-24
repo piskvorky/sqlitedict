@@ -7,6 +7,7 @@ from accessories import TestCaseBackport
 from sys import version_info
 _major_version=version_info[0]
 
+
 class _ClassType(object):
     def __init__(self, value):
         self._value = value
