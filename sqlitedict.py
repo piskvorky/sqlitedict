@@ -100,9 +100,9 @@ def decode(obj):
     """Deserialize objects retrieved from SQLite."""
     try:
         return loads(bytes(obj))
-    except UnpicklingError:  # Because of the backward compatibility
-        logger.warning("Not a pickled string %s in sqlite", obj)
-        return obj
+    except (UnpicklingError, ValueError, EOFError, TypeError):  # Because of the backward compatibility
+        logger.warning("Not a pickled string %s in sqlite, probably compatibility with sqlite 2.0 problem", obj)
+        raise KeyError("your sqlite db is not compatibile with sqlitedict2.0")
 
 
 class SqliteDict(DictClass):
