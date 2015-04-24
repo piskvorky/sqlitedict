@@ -4,7 +4,7 @@ import unittest
 
 # local
 import sqlitedict
-from test_temp_db import TempSqliteDictTest
+from test_valuetypes import TempSqliteDictTest
 from test_core import TestCaseBackport
 from accessories import norm_file
 

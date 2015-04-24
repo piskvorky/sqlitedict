@@ -6,7 +6,7 @@ import os
 
 # local
 import sqlitedict
-from test_temp_db import TempSqliteDictTest
+from test_valuetypes import TempSqliteDictTest
 from accessories import norm_file, TestCaseBackport
 
 
