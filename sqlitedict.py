@@ -232,7 +232,7 @@ class SqliteDict(DictClass):
         return [(decode_key(key), decode_key(value))
                 for key, value in self.conn.select(GET_ITEMS)]
 
-    @classmethod
+    @staticmethod
     def __keysearch(key):
         # First, expect v2.0+ pickled form,
         yield encode(key)
