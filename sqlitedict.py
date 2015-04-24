@@ -261,7 +261,7 @@ class SqliteDict(DictClass):
     def __contains__(self, key):
         HAS_ITEM = 'SELECT 1 FROM %s WHERE key = ?' % self.tablename
         return any(self.conn.select_one(HAS_ITEM, (_key,))
-                   for _key in self.__keysearch)
+                   for _key in SqliteDict.__keysearch(key))
 
     def __getitem__(self, key):
         GET_ITEM = 'SELECT value FROM %s WHERE key = ?' % self.tablename
@@ -279,9 +279,8 @@ class SqliteDict(DictClass):
         #   - unicode: if given as unicode, previous versions of sqlite
         #     silently coerced them to utf8-encoded bytes, so search for the
         #     given unicode string in its utf8-encoded byte-form.
-
-        for _key in self.__keysearch():
-            item = self.conn.select_one(GET_ITEM, (key,))
+        for _key in SqliteDict.__keysearch(key):
+            item = self.conn.select_one(GET_ITEM, (_key,))
             if item is not None:
                 return decode(item[0])
         raise KeyError(key)
