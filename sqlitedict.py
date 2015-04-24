@@ -286,8 +286,9 @@ class SqliteDict(DictClass):
         raise KeyError(key)
 
     def __setitem__(self, key, value):
-        DEL_ITEM = 'DELETE FROM %s WHERE key = ?' % self.tablename
+        HAS_ITEM = 'SELECT 1 FROM %s WHERE key = ?' % self.tablename
         ADD_ITEM = 'REPLACE INTO %s (key, value) VALUES (?,?)' % self.tablename
+        DEL_ITEM = 'DELETE FROM %s WHERE key = ?' % self.tablename
         # This is a tricky version compatibility check: if the key already
         # exists, but is of old v1.2- (bytes, coerced-unicode) type, then we
         # must explicitly delete the key of the old version before setting the
@@ -295,7 +296,7 @@ class SqliteDict(DictClass):
         # the exact same value -- providing bad __len__ values and duplicate
         # keys in methods such as items().
 
-        _keys = self.__keysearch(key)
+        _keys = SqliteDict.__keysearch(key)
         next(_keys)  # toss the first key-type: if this were to match, then
                      # we're replacing a v2.0+ key, and that's perfectly
                      # fine.  We're concerned about discovering v1.2- keytypes.
