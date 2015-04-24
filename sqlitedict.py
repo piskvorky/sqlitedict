@@ -316,16 +316,17 @@ class SqliteDict(DictClass):
             self.conn.execute(DEL_ITEM, (delete_v1_key,))
 
     def __delitem__(self, key):
+        HAS_ITEM = 'SELECT 1 FROM %s WHERE key = ?' % self.tablename
         DEL_ITEM = 'DELETE FROM %s WHERE key = ?' % self.tablename
         # This is a tricky version compatibility check: the 'key in self'
         # statement previously used would return True for any of bytes (v1.2-),
         # coerced-unicode (v1.2-), or picklable type (v2.0+): but we need to
         # delete by its explicit type, not purely the picklable type.  So we
         # must first explicitly match it, then delete the matching key.
-        for _key in self.__keysearch(key):
+        for _key in SqliteDict.__keysearch(key):
             if self.conn.select_one(HAS_ITEM, (_key,)) is not None:
                 self.log.debug('delete v1.2- key: %r.', _key)
-                self.conn.execute(DEL_ITEM, (key,))
+                self.conn.execute(DEL_ITEM, (_key,))
                 break
         else:
             raise KeyError(key)
