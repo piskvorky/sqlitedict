@@ -39,7 +39,7 @@ from threading import Thread
 _major_version = sys.version_info[0]
 if _major_version < 3: # py <= 2.x
     if sys.version_info[1] < 5: # py <= 2.4
-      raise ImportError("sqlitedict requires python 2.5 or higher (python 3.3 or higher supported)")
+        raise ImportError("sqlitedict requires python 2.5 or higher")
 
     # necessary to use exec()_ as this would be a SyntaxError in python3.
     # this is an exact port of six.reraise():
@@ -66,9 +66,9 @@ else:
         raise value
 
 try:
-    from cPickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
+    from cPickle import dumps, loads, UnpicklingError, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
 except ImportError:
-    from pickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
+    from pickle import dumps, loads, UnpicklingError, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
 
 # some Python 3 vs 2 imports
 try:
@@ -83,9 +83,6 @@ except ImportError:
 
 
 
-logger = logging.getLogger(__name__)
-
-
 def open(*args, **kwargs):
     """See documentation of the SqliteDict class."""
     return SqliteDict(*args, **kwargs)
@@ -94,6 +91,46 @@ def open(*args, **kwargs):
 def encode(obj):
     """Serialize an object using pickle to a binary format accepted by SQLite."""
     return sqlite3.Binary(dumps(obj, protocol=PICKLE_PROTOCOL))
+
+
+def decode_key(obj):
+    """Decode a dict key from SQLite."""
+    # Versions of sqlitedict 1.2.0 and prior coerced all keys of a dictionary
+    # to b'ytestring':  For unicode, any text was coerced as utf-8 encoded
+    # bytes, and for any other types, an exception was raised in the inner
+    # worker thread, causing all sqlitedict calls to block indefinitely.
+    #
+    # We provide a sort of "transient upgrade": Going forward, all keys stored
+    # are pickled in the same manner as their values: on retrieval, we attempt
+    # to unpickle them: if it fails, we assume an older version of sqlitedict,
+    # where the key is a utf-8 encoded b'ytestring', and return the key as-is.
+    #
+    # on next store, it will be pickled as its true type, and not coerced or
+    # throw an exception as it previously did.
+    try:
+        # sqlitedict 2.0+
+        return loads(bytes(obj))
+    # Many kinds of exceptions can occur during unpickling, especially some
+    # unicode data encoded as utf-8 bytes can appear as pickled data, as the
+    # \x80 pickle.PROTO byte is *also* a very common utf-8 start byte, it
+    # travels farther into pickle.Unpickler, raising ValueError or EOFError on
+    # subsequent bytes.
+    #
+    # There is some small chance that a valid utf-8 bytestring could
+    # unpickle into something really wild. It would take some investigation of
+    # the protocol to discover ... XXX
+    except (UnpicklingError, ValueError, EOFError, TypeError):
+        # sqlitedict 1.2-:
+        # ValueErrors:
+        #  - unsupported pickle protocol
+        #  - insecure string pickle
+        #  - unregistered extension code
+        # EOFError:
+        #  - unexpected end of what was believed to be a pickle string
+        # TypeError:
+        #   a very rare situation, where a string was believed could
+        #   be unpickled to a class, but such class could not be instantiated.
+        return obj
 
 
 def decode(obj):
@@ -141,7 +178,8 @@ class SqliteDict(DictClass):
         self.filename = filename
         self.tablename = tablename
 
-        logger.info("opening Sqlite table %r in %s" % (tablename, filename))
+        self.log = logging.getLogger(__name__)
+        self.log.info("opening Sqlite table %r in %s" % (tablename, filename))
         MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS %s (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
         self.conn = SqliteMultithread(filename, autocommit=autocommit, journal_mode=journal_mode)
         self.conn.execute(MAKE_TABLE)
@@ -156,7 +194,10 @@ class SqliteDict(DictClass):
         self.close()
 
     def __str__(self):
-        return "SqliteDict(%s)" % (self.conn.filename)
+        if self.conn is not None:
+            return "SqliteDict(%s)" % (self.conn.filename)
+        else:
+            return "SqliteDict(<None>)"
 
     def __repr__(self):
         return str(self) # no need of something complex
@@ -180,40 +221,120 @@ class SqliteDict(DictClass):
 
     def keys(self):
         GET_KEYS = 'SELECT key FROM %s ORDER BY rowid' % self.tablename
-        return [key[0] for key in self.conn.select(GET_KEYS)]
+        return [decode_key(key[0]) for key in self.conn.select(GET_KEYS)]
 
     def values(self):
         GET_VALUES = 'SELECT value FROM %s ORDER BY rowid' % self.tablename
-        return  [decode(value[0]) for value in self.conn.select(GET_VALUES)]
+        return [decode_key(value[0]) for value in self.conn.select(GET_VALUES)]
 
     def items(self):
         GET_ITEMS = 'SELECT key, value FROM %s ORDER BY rowid' % self.tablename
-        return [(key,decode(value)) for key,value in self.conn.select(GET_ITEMS)]
+        return [(decode_key(key), decode_key(value))
+                for key, value in self.conn.select(GET_ITEMS)]
+
+    @staticmethod
+    def __keysearch(key):
+        # First, expect v2.0+ pickled form,
+        yield encode(key)
+
+        if isinstance(key, bytes):
+            # Then, expect v1.2- raw bytes form,
+            yield key
+
+        # for python 2.x, if the given key is of type 'unicode',
+        # then search for the utf-8 encoded form (v1.2-)
+        elif _major_version < 3:
+            if isinstance(key, unicode):
+                try:
+                    yield key.encode('utf8')
+                except UnicodeEncodeError:  # unlikely
+                    pass
+
+        # and for python 3.x, 'str' is actually the new 'unicode' type,
+        # perform the same coercion search.
+        elif isinstance(key, str):
+            try:
+                yield key.encode('utf8')
+            except UnicodeEncodeError:  # unlikely
+                pass
 
     def __contains__(self, key):
         HAS_ITEM = 'SELECT 1 FROM %s WHERE key = ?' % self.tablename
-        return self.conn.select_one(HAS_ITEM, (key,)) is not None
+        return any(self.conn.select_one(HAS_ITEM, (_key,))
+                   for _key in SqliteDict.__keysearch(key))
 
     def __getitem__(self, key):
         GET_ITEM = 'SELECT value FROM %s WHERE key = ?' % self.tablename
-        item = self.conn.select_one(GET_ITEM, (key,))
-        if item is None:
-            raise KeyError(key)
-        return decode(item[0])
+
+        # Beginning with sqlitedict v2.0, we expect keys in pickled form; for
+        # backwards compatibility with v1.2.0 and previous, however, we must
+        # also search for the given 'key' by:
+        #
+        #   - bytes, if given as bytes, for datasets where the key was not yet
+        #     pickled.  When this happens, we cannot simply return it: we must
+        #     provision it to the new format, otherwise if the same 'key' were
+        #     again saved, it would duplicate as both the pickled and
+        #     non-pickled value.
+        #
+        #   - unicode: if given as unicode, previous versions of sqlite
+        #     silently coerced them to utf8-encoded bytes, so search for the
+        #     given unicode string in its utf8-encoded byte-form.
+        for _key in SqliteDict.__keysearch(key):
+            item = self.conn.select_one(GET_ITEM, (_key,))
+            if item is not None:
+                return decode(item[0])
+        raise KeyError(key)
 
     def __setitem__(self, key, value):
+        HAS_ITEM = 'SELECT 1 FROM %s WHERE key = ?' % self.tablename
         ADD_ITEM = 'REPLACE INTO %s (key, value) VALUES (?,?)' % self.tablename
-        self.conn.execute(ADD_ITEM, (key, encode(value)))
+        DEL_ITEM = 'DELETE FROM %s WHERE key = ?' % self.tablename
+        # This is a tricky version compatibility check: if the key already
+        # exists, but is of old v1.2- (bytes, coerced-unicode) type, then we
+        # must explicitly delete the key of the old version before setting the
+        # new value.  Otherwise, we will have duplicate 'keys' that decode to
+        # the exact same value -- providing bad __len__ values and duplicate
+        # keys in methods such as items().
+
+        _keys = SqliteDict.__keysearch(key)
+        next(_keys)  # toss the first key-type: if this were to match, then
+                     # we're replacing a v2.0+ key, and that's perfectly
+                     # fine.  We're concerned about discovering v1.2- keytypes.
+
+        # if a v1.2- key is discovered, mark it for deletion *after* setting
+        # th v2.0+ key-type: this ensures that data is not lost between the
+        # 'set' and 'delete' operation if the process were to be interrupted.
+        delete_v1_key = None
+        for _key in _keys:
+            if self.conn.select_one(HAS_ITEM, (_key,)) is not None:
+                delete_v1_key = _key
+                break
+
+        self.conn.execute(ADD_ITEM, (encode(key), encode(value)))
+
+        if delete_v1_key is not None:
+            self.log.debug('delete v1.2- after set v2: %r.', delete_v1_key)
+            self.conn.execute(DEL_ITEM, (delete_v1_key,))
 
     def __delitem__(self, key):
-        if key not in self:
-            raise KeyError(key)
+        HAS_ITEM = 'SELECT 1 FROM %s WHERE key = ?' % self.tablename
         DEL_ITEM = 'DELETE FROM %s WHERE key = ?' % self.tablename
-        self.conn.execute(DEL_ITEM, (key,))
+        # This is a tricky version compatibility check: the 'key in self'
+        # statement previously used would return True for any of bytes (v1.2-),
+        # coerced-unicode (v1.2-), or picklable type (v2.0+): but we need to
+        # delete by its explicit type, not purely the picklable type.  So we
+        # must first explicitly match it, then delete the matching key.
+        for _key in SqliteDict.__keysearch(key):
+            if self.conn.select_one(HAS_ITEM, (_key,)) is not None:
+                self.log.debug('delete v1.2- key: %r.', _key)
+                self.conn.execute(DEL_ITEM, (_key,))
+                break
+        else:
+            raise KeyError(key)
 
     def update(self, items=(), **kwds):
         try:
-            items = [(k, encode(v)) for k, v in items.items()]
+            items = [(encode(k), encode(v)) for k, v in items.items()]
         except AttributeError:
             pass
 
@@ -244,7 +365,7 @@ class SqliteDict(DictClass):
 
     def close(self, do_log=True):
         if do_log:
-            logger.debug("closing %s" % self)
+            self.log.debug("closing %s" % self)
         if hasattr(self, 'conn') and self.conn is not None:
             if self.conn.autocommit:
                 # typically calls to commit are non-blocking when autocommit is
@@ -267,11 +388,11 @@ class SqliteDict(DictClass):
         if self.filename == ':memory:':
             return
 
-        logger.info("deleting %s" % self.filename)
+        self.log.info("deleting %s" % self.filename)
         try:
             os.remove(self.filename)
         except (OSError, IOError):
-            logger.exception("failed to delete %s" % (self.filename))
+            self.log.exception("failed to delete %s" % (self.filename))
 
     def __del__(self):
         # like close(), but assume globals are gone by now (do not log!)

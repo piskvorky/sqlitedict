@@ -1,12 +1,11 @@
 # std imports
 import unittest
 import tempfile
-import sys
 import os
 
 # local
 import sqlitedict
-from test_temp_db import TempSqliteDictTest
+from test_valuetypes import TempSqliteDictTest
 from accessories import norm_file, TestCaseBackport
 
 
@@ -81,7 +80,6 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
         next_db = sqlitedict.SqliteDict(filename=fname, tablename='sometable', flag='n')
         self.assertNotIn('key', next_db.keys())
 
-
     def test_overwrite_using_flag_w(self):
         """Re-opening of a database with flag='w' destroys only the target table."""
         # given,
@@ -105,6 +103,7 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
         next_db_2 = sqlitedict.SqliteDict(filename=fname, tablename='two')
         self.assertIn('key', next_db_2.keys())
 
+
 class SqliteDictTerminateTest(unittest.TestCase):
 
     def test_terminate_instead_close(self):
@@ -116,6 +115,7 @@ class SqliteDictTerminateTest(unittest.TestCase):
         self.assertEqual(d['abc'], 'def')
         d.terminate()
         self.assertFalse(os.path.isfile('tests/db/sqlitedict-terminate.sqlite'))
+
 
 class SqliteDictTerminateFailTest(unittest.TestCase):
     """Provide Coverage for SqliteDict.terminate()."""
