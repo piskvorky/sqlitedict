@@ -34,7 +34,7 @@ class SetupDevelop(setuptools.command.develop.develop):
         - Ensures 'nose' and 'coverage.py' are installed for testing.
         - Call super()'s run method.
         """
-        subprocess.check_call(('pip', 'install', 'nose', 'coverage'))
+        subprocess.check_call(('pip', 'install', 'nose', 'coverage', 'unittest2'))
 
         # Call super() (except develop is an old-style class, so we must call
         # directly). The effect is that the development egg-link is installed.

@@ -1,10 +1,12 @@
 """Test cases for on-import logic."""
-import unittest
+# std imports
 import sys
-from accessories import TestCaseBackport
+
+# 3rd party
+import unittest2
 
 
-class SqliteDict_cPickleImportTest(TestCaseBackport):
+class SqliteDict_cPickleImportTest(unittest2.TestCase):
     """Verify fallback to 'pickle' module when 'cPickle' is not found."""
     def setUp(self):
         self.orig_meta_path = sys.meta_path
@@ -42,7 +44,7 @@ class SqliteDict_cPickleImportTest(TestCaseBackport):
         self.assertIs(sqlitedict.dumps, sys.modules['pickle'].dumps)
 
 
-class SqliteDictPython24Test(TestCaseBackport):
+class SqliteDictPython24Test(unittest2.TestCase):
     """Verify ImportError when using python2.4 or earlier."""
     def setUp(self):
         # manually monkeypatch sys.version_info

@@ -1,12 +1,14 @@
-import unittest
+# std imports
+import sys
+
+# local
 import sqlitedict
 
-from accessories import TestCaseBackport
+# 3rd-party
+import unittest2
 
-from sys import version_info
-_major_version=version_info[0]
 
-class TempSqliteDictTest(TestCaseBackport):
+class TempSqliteDictTest(unittest2.TestCase):
 
     def setUp(self):
         self.d = sqlitedict.SqliteDict()
@@ -55,7 +57,7 @@ class TempSqliteDictTest(TestCaseBackport):
         self.d['abc'] = 'lmno'
         self.d['xyz'] = 'pdq'
         self.assertEqual(len(self.d), 2)
-        if _major_version == 2:
+        if sys.version_info < (3, 0):
             self.assertEqual(list(self.d.iteritems()),
                             [('abc', 'lmno'), ('xyz', 'pdq')])
         self.assertEqual(self.d.items(),
@@ -71,7 +73,7 @@ class TempSqliteDictTest(TestCaseBackport):
         self.d[("cde", "ftp")] = 35
         self.d[{"a": 3, "b": 6}] = "yse"
         self.assertEqual(len(self.d), 3)
-        if _major_version == 2:
+        if sys.version_info < (3, 0):
             self.assertEqual(list(self.d.iteritems()),
                             [(["abc", "klm"], "xyz"), (("cde", "ftp"), 35),
                              ({"a": 3, "b": 6}, "yse")])
