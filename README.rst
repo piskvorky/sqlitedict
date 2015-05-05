@@ -118,7 +118,14 @@ Comments, bug reports
 ``sqlitedict`` resides on `github <https://github.com/piskvorky/sqlitedict>`_. You can file
 issues or pull requests there.
 
+History
+-------
+
+1.3.0: improve error handling in multithreading (`PR #28 <https://github.com/piskvorky/sqlitedict/pull/28>`_); 100% test coverage.
+
+1.2.0: full python 3 support, continuous testing via `Travis CI <https://travis-ci.org/piskvorky/sqlitedict>`_.
+
 ----
 
 ``sqlitedict`` is open source software released under the `Apache 2.0 license <http://opensource.org/licenses/apache2.0.php>`_.
-Copyright (c) 2011-now Radim Rehurek and authors.
+Copyright (c) 2011-now `Radim Řehůřek <http://radimrehurek.com>`_ and contributors.

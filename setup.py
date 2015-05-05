@@ -9,7 +9,7 @@
 """
 Run with:
 
-sudo python ./setup.py install
+python ./setup.py install
 """
 
 import os
@@ -52,8 +52,9 @@ setup(
 
     py_modules = ['sqlitedict'],
 
-    # there is a bug in python2.5, preventing distutils from using any non-ascii characters :( http://bugs.python.org/issue2562
-    author = 'Radim Rehurek, Victor R. Escobar, Andrey Usov, Prasanna Swaminathan',
+    # there is a bug in python2.5, preventing distutils from using any non-ascii characters :(
+    # http://bugs.python.org/issue2562
+    author = 'Radim Rehurek, Victor R. Escobar, Andrey Usov, Prasanna Swaminathan, Jeff Quast',
     author_email = "various",
     maintainer = 'Radim Rehurek',
     maintainer_email = 'me@radimrehurek.com',
@@ -72,7 +73,7 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 2.5', # I wonder if there is a shortcut for that
+        'Programming Language :: Python :: 2.5',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.3',
