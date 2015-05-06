@@ -6,5 +6,5 @@ python:
   - "3.3"
   - "2.7"
   - "2.6"
-install: python setup.py install
+install: python setup.py develop
 script: make test-all

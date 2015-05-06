@@ -1,16 +1,17 @@
 # std imports
-import unittest
 import tempfile
-import sys
 import os
 
 # local
 import sqlitedict
 from test_temp_db import TempSqliteDictTest
-from accessories import norm_file, TestCaseBackport
+from accessories import norm_file
+
+# 3rd party
+import unittest2
 
 
-class SqliteMiscTest(TestCaseBackport):
+class SqliteMiscTest(unittest2.TestCase):
 
     def test_with_statement(self):
         """Verify using sqlitedict as a contextmanager . """
@@ -105,7 +106,7 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
         next_db_2 = sqlitedict.SqliteDict(filename=fname, tablename='two')
         self.assertIn('key', next_db_2.keys())
 
-class SqliteDictTerminateTest(unittest.TestCase):
+class SqliteDictTerminateTest(unittest2.TestCase):
 
     def test_terminate_instead_close(self):
         ''' make terminate() instead of close()
@@ -117,7 +118,7 @@ class SqliteDictTerminateTest(unittest.TestCase):
         d.terminate()
         self.assertFalse(os.path.isfile('tests/db/sqlitedict-terminate.sqlite'))
 
-class SqliteDictTerminateFailTest(unittest.TestCase):
+class SqliteDictTerminateFailTest(unittest2.TestCase):
     """Provide Coverage for SqliteDict.terminate()."""
 
     def setUp(self):

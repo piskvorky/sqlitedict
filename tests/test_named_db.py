@@ -1,11 +1,6 @@
-# std import
-import tempfile
-import unittest
-
-# local
+# local imports
 import sqlitedict
 from test_temp_db import TempSqliteDictTest
-from test_core import TestCaseBackport
 from accessories import norm_file
 
 

@@ -32,43 +32,15 @@ import sys
 import tempfile
 import random
 import logging
-import traceback
-
 from threading import Thread
 
-_major_version = sys.version_info[0]
-if _major_version < 3: # py <= 2.x
-    if sys.version_info[1] < 5: # py <= 2.4
-      raise ImportError("sqlitedict requires python 2.5 or higher (python 3.3 or higher supported)")
-
-    # necessary to use exec()_ as this would be a SyntaxError in python3.
-    # this is an exact port of six.reraise():
-    def exec_(_code_, _globs_=None, _locs_=None):
-        """Execute code in a namespace."""
-        if _globs_ is None:
-            frame = sys._getframe(1)
-            _globs_ = frame.f_globals
-            if _locs_ is None:
-                _locs_ = frame.f_locals
-            del frame
-        elif _locs_ is None:
-            _locs_ = _globs_
-        exec("""exec _code_ in _globs_, _locs_""")
-
-    exec_("def reraise(tp, value, tb=None):\n"
-          "    raise tp, value, tb\n")
-else:
-    def reraise(tp, value, tb=None):
-        if value is None:
-            value = tp()
-        if value.__traceback__ is not tb:
-            raise value.with_traceback(tb)
-        raise value
+if sys.version_info < (2, 5):
+  raise ImportError("sqlitedict requires python 2.5 or higher (python 3.3 or higher supported)")
 
 try:
-    from cPickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
+    from cPickle import dumps, loads, UnpicklingError, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
 except ImportError:
-    from pickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
+    from pickle import dumps, loads, UnpicklingError, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
 
 # some Python 3 vs 2 imports
 try:
@@ -98,7 +70,13 @@ def encode(obj):
 
 def decode(obj):
     """Deserialize objects retrieved from SQLite."""
-    return loads(bytes(obj))
+    try:
+        return loads(bytes(obj))
+    except (UnpicklingError, ValueError, EOFError, TypeError):  # Checking for the possible DB used by version 1.2.
+        logger.warning("Not a pickled string %s in sqlite, probably compatibility with sqlite 2.0 problem. "
+            "you can simply run `python sqlite_migration.py` ... in order to migrate the sqlite DB", obj)
+        raise KeyError("your sqlite db is not compatible with sqlitedict2.0 "
+            "you can simply run `python sqlite_migration.py` ... in order to migrate the sqlite DB")
 
 
 class SqliteDict(DictClass):
@@ -156,7 +134,9 @@ class SqliteDict(DictClass):
         self.close()
 
     def __str__(self):
-        return "SqliteDict(%s)" % (self.conn.filename)
+        if hasattr(self.conn, 'filename'):
+            return "SqliteDict(%s)" % (self.conn.filename)
+        return "SqliteDict(<None>)"
 
     def __repr__(self):
         return str(self) # no need of something complex
@@ -180,40 +160,40 @@ class SqliteDict(DictClass):
 
     def keys(self):
         GET_KEYS = 'SELECT key FROM %s ORDER BY rowid' % self.tablename
-        return [key[0] for key in self.conn.select(GET_KEYS)]
+        return [decode(key[0]) for key in self.conn.select(GET_KEYS)]
 
     def values(self):
         GET_VALUES = 'SELECT value FROM %s ORDER BY rowid' % self.tablename
-        return  [decode(value[0]) for value in self.conn.select(GET_VALUES)]
+        return [decode(value[0]) for value in self.conn.select(GET_VALUES)]
 
     def items(self):
         GET_ITEMS = 'SELECT key, value FROM %s ORDER BY rowid' % self.tablename
-        return [(key,decode(value)) for key,value in self.conn.select(GET_ITEMS)]
+        return [(decode(key), decode(value)) for key, value in self.conn.select(GET_ITEMS)]
 
     def __contains__(self, key):
         HAS_ITEM = 'SELECT 1 FROM %s WHERE key = ?' % self.tablename
-        return self.conn.select_one(HAS_ITEM, (key,)) is not None
+        return self.conn.select_one(HAS_ITEM, (encode(key),)) is not None
 
     def __getitem__(self, key):
         GET_ITEM = 'SELECT value FROM %s WHERE key = ?' % self.tablename
-        item = self.conn.select_one(GET_ITEM, (key,))
+        item = self.conn.select_one(GET_ITEM, (encode(key),))
         if item is None:
             raise KeyError(key)
         return decode(item[0])
 
     def __setitem__(self, key, value):
         ADD_ITEM = 'REPLACE INTO %s (key, value) VALUES (?,?)' % self.tablename
-        self.conn.execute(ADD_ITEM, (key, encode(value)))
+        self.conn.execute(ADD_ITEM, (encode(key), encode(value)))
 
     def __delitem__(self, key):
         if key not in self:
             raise KeyError(key)
         DEL_ITEM = 'DELETE FROM %s WHERE key = ?' % self.tablename
-        self.conn.execute(DEL_ITEM, (key,))
+        self.conn.execute(DEL_ITEM, (encode(key),))
 
     def update(self, items=(), **kwds):
         try:
-            items = [(k, encode(v)) for k, v in items.items()]
+            items = [(encode(k), encode(v)) for k, v in items.items()]
         except AttributeError:
             pass
 
@@ -278,7 +258,7 @@ class SqliteDict(DictClass):
         self.close(do_log=False)
 
 # Adding extra methods for python 2 compatibility (at import time)
-if _major_version == 2:
+if sys.version_info < (3, 0):
     setattr(SqliteDict, "iterkeys", lambda self: self.keys())
     setattr(SqliteDict, "itervalues", lambda self: self.values())
     setattr(SqliteDict, "iteritems", lambda self: self.items())
@@ -303,7 +283,6 @@ class SqliteMultithread(Thread):
         # use request queue of unlimited size
         self.reqs = Queue()
         self.setDaemon(True) # python2.5-compatible
-        self.exception = None
         self.log = logging.getLogger('sqlitedict.SqliteMultithread')
         self.start()
 
@@ -319,7 +298,7 @@ class SqliteMultithread(Thread):
 
         res = None
         while True:
-            req, arg, res, outer_stack = self.reqs.get()
+            req, arg, res = self.reqs.get()
             if req == '--close--':
                 assert res, ('--close-- without return queue', res)
                 break
@@ -328,35 +307,7 @@ class SqliteMultithread(Thread):
                 if res:
                     res.put('--no more--')
             else:
-                try:
-                    cursor.execute(req, arg)
-                except Exception as err:
-                    self.exception = (e_type, e_value, e_tb) = sys.exc_info()
-                    inner_stack = traceback.extract_stack()
-
-                    # An exception occurred in our thread, but we may not
-                    # immediately able to throw it in our calling thread, if it has
-                    # no return `res` queue: log as level ERROR both the inner and
-                    # outer exception immediately.
-                    #
-                    # Any iteration of res.get() or any next call will detect the
-                    # inner exception and re-raise it in the calling Thread; though
-                    # it may be confusing to see an exception for an unrelated
-                    # statement, an ERROR log statement from the 'sqlitedict.*'
-                    # namespace contains the original outer stack location.
-                    self.log.error('Inner exception:')
-                    for item in traceback.format_list(inner_stack):
-                        self.log.error(item)
-                    self.log.error('')  # deliniate traceback & exception w/blank line
-                    for item in traceback.format_exception_only(e_type, e_value):
-                        self.log.error(item)
-
-                    self.log.error('')  # exception & outer stack w/blank line
-                    self.log.error('Outer stack:')
-                    for item in traceback.format_list(outer_stack):
-                        self.log.error(item)
-                    self.log.error('Exception will be re-raised at next call.')
-
+                cursor.execute(req, arg)
 
                 if res:
                     for rec in cursor:
@@ -370,52 +321,15 @@ class SqliteMultithread(Thread):
         conn.close()
         res.put('--no more--')
 
-    def check_raise_error(self):
-        """
-        Check for and raise exception for any previous sqlite query.
-
-        For the `execute*` family of method calls, such calls are non-blocking and any
-        exception raised in the thread cannot be handled by the calling Thread (usually
-        MainThread).  This method is called on `close`, and prior to any subsequent
-        calls to the `execute*` methods to check for and raise an exception in a
-        previous call to the MainThread.
-        """
-        if self.exception:
-            e_type, e_value, e_tb = self.exception
-
-            # clear self.exception, if the caller decides to handle such
-            # exception, we should not repeatedly re-raise it.
-            self.exception = None
-
-            self.log.error('An exception occurred from a previous statement, view '
-                           'the logging namespace "sqlitedict" for outer stack.')
-
-            # The third argument to raise is the traceback object, and it is
-            # substituted instead of the current location as the place where
-            # the exception occurred, this is so that when using debuggers such
-            # as `pdb', or simply evaluating the naturally raised traceback, we
-            # retain the original (inner) location of where the exception
-            # occurred.
-            reraise(e_type, e_value, e_tb)
-
-
     def execute(self, req, arg=None, res=None):
         """
         `execute` calls are non-blocking: just queue up the request and return immediately.
         """
-        self.check_raise_error()
-
-        # NOTE: This might be a lot of information to pump into an input
-        # queue, affecting performance.  I've also seen earlier versions of
-        # jython take a severe performance impact for throwing exceptions
-        # so often.
-        stack = traceback.extract_stack()[:-1]
-        self.reqs.put((req, arg or tuple(), res, stack))
+        self.reqs.put((req, arg or tuple(), res))
 
     def executemany(self, req, items):
         for item in items:
             self.execute(req, item)
-        self.check_raise_error()
 
     def select(self, req, arg=None):
         """
@@ -429,7 +343,6 @@ class SqliteMultithread(Thread):
         self.execute(req, arg, res)
         while True:
             rec = res.get()
-            self.check_raise_error()
             if rec == '--no more--':
                 break
             yield rec
