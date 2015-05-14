@@ -66,9 +66,9 @@ else:
         raise value
 
 try:
-    from cPickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
+    from cPickle import dumps, loads, UnpicklingError, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
 except ImportError:
-    from pickle import dumps, loads, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
+    from pickle import dumps, loads, UnpicklingError, HIGHEST_PROTOCOL as PICKLE_PROTOCOL
 
 # some Python 3 vs 2 imports
 try:
@@ -98,7 +98,13 @@ def encode(obj):
 
 def decode(obj):
     """Deserialize objects retrieved from SQLite."""
-    return loads(bytes(obj))
+    try:
+        return loads(bytes(obj))
+    except (UnpicklingError, ValueError, EOFError, TypeError):  # Checking for the possible DB used by version 1.2.
+        logger.warning("Not a pickled string %s in sqlite, probably compatibility with sqlite 2.0 problem. "
+            "you can simply run `python sqlite_migration.py` ... in order to migrate the sqlite DB", obj)
+        raise KeyError("your sqlite db is not compatibile with sqlitedict2.0 "
+            "you can simply run `python sqlite_migration.py` ... in order to migrate the sqlite DB")
 
 
 class SqliteDict(DictClass):
@@ -180,40 +186,40 @@ class SqliteDict(DictClass):
 
     def keys(self):
         GET_KEYS = 'SELECT key FROM %s ORDER BY rowid' % self.tablename
-        return [key[0] for key in self.conn.select(GET_KEYS)]
+        return [decode(key[0]) for key in self.conn.select(GET_KEYS)]
 
     def values(self):
         GET_VALUES = 'SELECT value FROM %s ORDER BY rowid' % self.tablename
-        return  [decode(value[0]) for value in self.conn.select(GET_VALUES)]
+        return [decode(value[0]) for value in self.conn.select(GET_VALUES)]
 
     def items(self):
         GET_ITEMS = 'SELECT key, value FROM %s ORDER BY rowid' % self.tablename
-        return [(key,decode(value)) for key,value in self.conn.select(GET_ITEMS)]
+        return [(decode(key), decode(value)) for key, value in self.conn.select(GET_ITEMS)]
 
     def __contains__(self, key):
         HAS_ITEM = 'SELECT 1 FROM %s WHERE key = ?' % self.tablename
-        return self.conn.select_one(HAS_ITEM, (key,)) is not None
+        return self.conn.select_one(HAS_ITEM, (encode(key),)) is not None
 
     def __getitem__(self, key):
         GET_ITEM = 'SELECT value FROM %s WHERE key = ?' % self.tablename
-        item = self.conn.select_one(GET_ITEM, (key,))
+        item = self.conn.select_one(GET_ITEM, (encode(key),))
         if item is None:
             raise KeyError(key)
         return decode(item[0])
 
     def __setitem__(self, key, value):
         ADD_ITEM = 'REPLACE INTO %s (key, value) VALUES (?,?)' % self.tablename
-        self.conn.execute(ADD_ITEM, (key, encode(value)))
+        self.conn.execute(ADD_ITEM, (encode(key), encode(value)))
 
     def __delitem__(self, key):
         if key not in self:
             raise KeyError(key)
         DEL_ITEM = 'DELETE FROM %s WHERE key = ?' % self.tablename
-        self.conn.execute(DEL_ITEM, (key,))
+        self.conn.execute(DEL_ITEM, (encode(key),))
 
     def update(self, items=(), **kwds):
         try:
-            items = [(k, encode(v)) for k, v in items.items()]
+            items = [(encode(k), encode(v)) for k, v in items.items()]
         except AttributeError:
             pass
 

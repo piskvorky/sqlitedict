@@ -64,6 +64,24 @@ class TempSqliteDictTest(TestCaseBackport):
         self.assertEqual(self.d.keys(), ['abc', 'xyz'])
         self.assertEqual(list(self.d), ['abc', 'xyz'])
 
+    def test_records_with_picklable_key(self):
+        ''' test_records_with_picklable_key
+        '''
+        self.d[["abc", "klm"]] = "xyz"
+        self.d[("cde", "ftp")] = 35
+        self.d[{"a": 3, "b": 6}] = "yse"
+        self.assertEqual(len(self.d), 3)
+        if _major_version == 2:
+            self.assertEqual(list(self.d.iteritems()),
+                            [(["abc", "klm"], "xyz"), (("cde", "ftp"), 35),
+                             ({"a": 3, "b": 6}, "yse")])
+        self.assertEqual(self.d.items(),
+                        [(["abc", "klm"], "xyz"), (("cde", "ftp"), 35),
+                             ({"a": 3, "b": 6}, "yse")])
+        self.assertEqual(self.d.values(), ["xyz", 35, "yse"])
+        self.assertEqual(self.d.keys(), [["abc", "klm"], ("cde", "ftp"), {"a": 3, "b": 6}])
+        self.assertEqual(list(self.d), [["abc", "klm"], ("cde", "ftp"), {"a": 3, "b": 6}])
+
     def test_update_records(self):
         ''' test_update_records
         '''
