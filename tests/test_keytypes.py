@@ -11,7 +11,7 @@ class KeyTypeTest(unittest.TestCase):
     def test_list_key(self):
         """Use list object as key"""
         fname = 'tests/db/sqlitedict-mutable-test.sqlite'
-        d = sqlitedict2.SqliteDict(fname, autocommit=True)
+        d = sqlitedict.SqliteDict(fname, autocommit=True)
         k1 = [1,2]
         k2 = k1.copy()
         d[k1] = 3
@@ -27,7 +27,7 @@ class KeyTypeTest(unittest.TestCase):
         
         k1 == k2 but k1 is not k2
         """
-        fname = 'tests/db/sqlitedict2-mutable-test.sqlite'
+        fname = 'tests/db/sqlitedict-mutable-test.sqlite'
         d = sqlitedict.SqliteDict(fname, autocommit=True)
         k1 = (1.1, 2.2)
         k2 = (1.1, 2.2)
