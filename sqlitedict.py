@@ -15,8 +15,8 @@ A lightweight wrapper around Python's sqlite3 database, with a dict-like interfa
 and multi-thread access support::
 
 >>> mydict = SqliteDict('some.db', autocommit=True) # the mapping will be persisted to file `some.db`
->>> mydict['some_key'] = any_picklable_object
->>> print mydict['some_key']
+>>> mydict[any_picklable_object] = any_picklable_object
+>>> print mydict[any_picklable_object]
 >>> print len(mydict) # etc... all dict functions work
 
 Pickle is used internally to serialize the values. Keys are strings.
@@ -180,7 +180,7 @@ class SqliteDict(DictClass):
 
     def keys(self):
         GET_KEYS = 'SELECT key FROM %s ORDER BY rowid' % self.tablename
-        return [key[0] for key in self.conn.select(GET_KEYS)]
+        return [loads(key[0]) for key in self.conn.select(GET_KEYS)]
 
     def values(self):
         GET_VALUES = 'SELECT value FROM %s ORDER BY rowid' % self.tablename
@@ -188,32 +188,33 @@ class SqliteDict(DictClass):
 
     def items(self):
         GET_ITEMS = 'SELECT key, value FROM %s ORDER BY rowid' % self.tablename
-        return [(key,decode(value)) for key,value in self.conn.select(GET_ITEMS)]
+        return [(loads(key),decode(value)) 
+                        for key,value in self.conn.select(GET_ITEMS)]
 
     def __contains__(self, key):
         HAS_ITEM = 'SELECT 1 FROM %s WHERE key = ?' % self.tablename
-        return self.conn.select_one(HAS_ITEM, (key,)) is not None
+        return self.conn.select_one(HAS_ITEM, (dumps(key),)) is not None
 
     def __getitem__(self, key):
         GET_ITEM = 'SELECT value FROM %s WHERE key = ?' % self.tablename
-        item = self.conn.select_one(GET_ITEM, (key,))
+        item = self.conn.select_one(GET_ITEM, (dumps(key),))
         if item is None:
             raise KeyError(key)
         return decode(item[0])
 
     def __setitem__(self, key, value):
         ADD_ITEM = 'REPLACE INTO %s (key, value) VALUES (?,?)' % self.tablename
-        self.conn.execute(ADD_ITEM, (key, encode(value)))
+        self.conn.execute(ADD_ITEM, (dumps(key), encode(value)))
 
     def __delitem__(self, key):
         if key not in self:
             raise KeyError(key)
         DEL_ITEM = 'DELETE FROM %s WHERE key = ?' % self.tablename
-        self.conn.execute(DEL_ITEM, (key,))
+        self.conn.execute(DEL_ITEM, (dumps(key),))
 
     def update(self, items=(), **kwds):
         try:
-            items = [(k, encode(v)) for k, v in items.items()]
+            items = [(dumps(k), encode(v)) for k, v in items.items()]
         except AttributeError:
             pass
 
