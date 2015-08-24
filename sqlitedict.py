@@ -37,9 +37,9 @@ import traceback
 from threading import Thread
 
 _major_version = sys.version_info[0]
-if _major_version < 3: # py <= 2.x
-    if sys.version_info[1] < 5: # py <= 2.4
-      raise ImportError("sqlitedict requires python 2.5 or higher (python 3.3 or higher supported)")
+if _major_version < 3:  # py <= 2.x
+    if sys.version_info[1] < 5:  # py <= 2.4
+        raise ImportError("sqlitedict requires python 2.5 or higher (python 3.3 or higher supported)")
 
     # necessary to use exec()_ as this would be a SyntaxError in python3.
     # this is an exact port of six.reraise():
@@ -72,15 +72,14 @@ except ImportError:
 
 # some Python 3 vs 2 imports
 try:
-   from collections import UserDict as DictClass
+    from collections import UserDict as DictClass
 except ImportError:
-   from UserDict import DictMixin as DictClass
+    from UserDict import DictMixin as DictClass
 
 try:
     from queue import Queue
 except ImportError:
     from Queue import Queue
-
 
 
 logger = logging.getLogger(__name__)
@@ -159,7 +158,7 @@ class SqliteDict(DictClass):
         return "SqliteDict(%s)" % (self.conn.filename)
 
     def __repr__(self):
-        return str(self) # no need of something complex
+        return str(self)  # no need of something complex
 
     def __len__(self):
         # `select count (*)` is super slow in sqlite (does a linear scan!!)
@@ -184,11 +183,11 @@ class SqliteDict(DictClass):
 
     def values(self):
         GET_VALUES = 'SELECT value FROM %s ORDER BY rowid' % self.tablename
-        return  [decode(value[0]) for value in self.conn.select(GET_VALUES)]
+        return [decode(value[0]) for value in self.conn.select(GET_VALUES)]
 
     def items(self):
         GET_ITEMS = 'SELECT key, value FROM %s ORDER BY rowid' % self.tablename
-        return [(key,decode(value)) for key,value in self.conn.select(GET_ITEMS)]
+        return [(key, decode(value)) for key, value in self.conn.select(GET_ITEMS)]
 
     def __contains__(self, key):
         HAS_ITEM = 'SELECT 1 FROM %s WHERE key = ?' % self.tablename
@@ -226,7 +225,7 @@ class SqliteDict(DictClass):
         return iter(self.keys())
 
     def clear(self):
-        CLEAR_ALL = 'DELETE FROM %s;' % self.tablename # avoid VACUUM, as it gives "OperationalError: database schema has changed"
+        CLEAR_ALL = 'DELETE FROM %s;' % self.tablename  # avoid VACUUM, as it gives "OperationalError: database schema has changed"
         self.conn.commit()
         self.conn.execute(CLEAR_ALL)
         self.conn.commit()
@@ -283,7 +282,7 @@ if _major_version == 2:
     setattr(SqliteDict, "itervalues", lambda self: self.values())
     setattr(SqliteDict, "iteritems", lambda self: self.items())
     SqliteDict.__nonzero__ = SqliteDict.__bool__
-    del SqliteDict.__bool__ # not needed and confusing
+    del SqliteDict.__bool__  # not needed and confusing
 #endclass SqliteDict
 
 
@@ -302,7 +301,7 @@ class SqliteMultithread(Thread):
         self.journal_mode = journal_mode
         # use request queue of unlimited size
         self.reqs = Queue()
-        self.setDaemon(True) # python2.5-compatible
+        self.setDaemon(True)  # python2.5-compatible
         self.exception = None
         self.log = logging.getLogger('sqlitedict.SqliteMultithread')
         self.start()
@@ -357,7 +356,6 @@ class SqliteMultithread(Thread):
                         self.log.error(item)
                     self.log.error('Exception will be re-raised at next call.')
 
-
                 if res:
                     for rec in cursor:
                         res.put(rec)
@@ -398,7 +396,6 @@ class SqliteMultithread(Thread):
             # occurred.
             reraise(e_type, e_value, e_tb)
 
-
     def execute(self, req, arg=None, res=None):
         """
         `execute` calls are non-blocking: just queue up the request and return immediately.
@@ -425,7 +422,7 @@ class SqliteMultithread(Thread):
         request is dequeued, and although you can iterate over the result normally
         (`for res in self.select(): ...`), the entire result will be in memory.
         """
-        res = Queue() # results of the select will appear as items in this queue
+        res = Queue()  # results of the select will appear as items in this queue
         self.execute(req, arg, res)
         while True:
             rec = res.get()
