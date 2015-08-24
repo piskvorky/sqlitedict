@@ -36,8 +36,8 @@ import traceback
 
 from threading import Thread
 
-_major_version = sys.version_info[0]
-if _major_version < 3:  # py <= 2.x
+major_version = sys.version_info[0]
+if major_version < 3:  # py <= 2.x
     if sys.version_info[1] < 5:  # py <= 2.4
         raise ImportError("sqlitedict requires python 2.5 or higher (python 3.3 or higher supported)")
 
@@ -277,7 +277,7 @@ class SqliteDict(DictClass):
         self.close(do_log=False)
 
 # Adding extra methods for python 2 compatibility (at import time)
-if _major_version == 2:
+if major_version == 2:
     setattr(SqliteDict, "iterkeys", lambda self: self.keys())
     setattr(SqliteDict, "itervalues", lambda self: self.values())
     setattr(SqliteDict, "iteritems", lambda self: self.items())
