@@ -278,9 +278,9 @@ class SqliteDict(DictClass):
 
 # Adding extra methods for python 2 compatibility (at import time)
 if major_version == 2:
-    setattr(SqliteDict, "iterkeys", lambda self: self.keys())
-    setattr(SqliteDict, "itervalues", lambda self: self.values())
-    setattr(SqliteDict, "iteritems", lambda self: self.items())
+    setattr(SqliteDict, "iterkeys", lambda self: iter(self.keys()))
+    setattr(SqliteDict, "itervalues", lambda self: iter(self.values()))
+    setattr(SqliteDict, "iteritems", lambda self: iter(self.items()))
     SqliteDict.__nonzero__ = SqliteDict.__bool__
     del SqliteDict.__bool__  # not needed and confusing
 #endclass SqliteDict
