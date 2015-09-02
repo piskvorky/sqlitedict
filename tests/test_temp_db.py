@@ -1,10 +1,17 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# This code is distributed under the terms and conditions
+# from the Apache License, Version 2.0
+
 import unittest
 import sqlitedict
 
 from accessories import TestCaseBackport
 
 from sys import version_info
-_major_version=version_info[0]
+major_version = version_info[0]
+
 
 class TempSqliteDictTest(TestCaseBackport):
 
@@ -55,13 +62,11 @@ class TempSqliteDictTest(TestCaseBackport):
         self.d['abc'] = 'lmno'
         self.d['xyz'] = 'pdq'
         self.assertEqual(len(self.d), 2)
-        if _major_version == 2:
-            self.assertEqual(list(self.d.iteritems()),
-                            [('abc', 'lmno'), ('xyz', 'pdq')])
-        self.assertEqual(self.d.items(),
-                        [('abc', 'lmno'), ('xyz', 'pdq')])
-        self.assertEqual(self.d.values(), ['lmno', 'pdq'])
-        self.assertEqual(self.d.keys(), ['abc', 'xyz'])
+        if major_version == 2:
+            self.assertEqual(list(self.d.iteritems()), [('abc', 'lmno'), ('xyz', 'pdq')])
+        self.assertEqual(list(self.d.items()), [('abc', 'lmno'), ('xyz', 'pdq')])
+        self.assertEqual(list(self.d.values()), ['lmno', 'pdq'])
+        self.assertEqual(list(self.d.keys()), ['abc', 'xyz'])
         self.assertEqual(list(self.d), ['abc', 'xyz'])
 
     def test_update_records(self):
@@ -71,8 +76,7 @@ class TempSqliteDictTest(TestCaseBackport):
         self.assertEqual(len(self.d), 3)
         # As far as I know dicts does not need to return
         # the elements in a specified order (sort() is required )
-        self.assertEqual(sorted(self.d.items()),
-                        sorted([('q', 'y'), ('p', 'x'), ('r', 'z')]))
+        self.assertEqual(sorted(self.d.items()), sorted([('q', 'y'), ('p', 'x'), ('r', 'z')]))
         self.assertEqual(sorted(list(self.d)), sorted(['q', 'p', 'r']))
 
     def test_handling_errors(self):

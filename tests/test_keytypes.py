@@ -16,12 +16,13 @@ import unittest
 import sqlitedict
 from accessories import TestCaseBackport
 
+
 def _assert_keyvalue(given_key, given_val):
     # given,
     with sqlitedict.SqliteDict() as db:
         # exercise
         db[given_key] = given_val
-        result_key = db.keys()[0]
+        result_key = list(db.keys())[0]
         result_val = db[result_key]
 
     # verify
@@ -30,9 +31,11 @@ def _assert_keyvalue(given_key, given_val):
     assert result_key == given_key, (result_key, given_key)
     assert result_val == given_val, (result_val, given_val)
 
+
 def test_strtype():
     """ Ensure the default str-type works fine. """
     yield _assert_keyvalue, b'some-key', b'some-val'
+
 
 class test_nextquery_exception(TestCaseBackport):
 
@@ -47,4 +50,4 @@ class test_nextquery_exception(TestCaseBackport):
             # exercise
             db[given_key] = given_val
             with self.assertRaises(sqlite3.InterfaceError):
-                result_key = db.keys()[0]
+                result_key = list(db.keys())[0]
