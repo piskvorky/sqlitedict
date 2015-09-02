@@ -121,6 +121,8 @@ issues or pull requests there.
 History
 -------
 
+**1.4.0**: fix regression where iterating over keys/values/items returned a full list instead of iterator
+
 **1.3.0**: improve error handling in multithreading (`PR #28 <https://github.com/piskvorky/sqlitedict/pull/28>`_); 100% test coverage.
 
 **1.2.0**: full python 3 support, continuous testing via `Travis CI <https://travis-ci.org/piskvorky/sqlitedict>`_.
