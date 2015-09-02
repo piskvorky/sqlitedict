@@ -177,17 +177,29 @@ class SqliteDict(DictClass):
         # Explicit better than implicit and bla bla
         return True if m is not None else False
 
-    def keys(self):
+    def iterkeys(self):
         GET_KEYS = 'SELECT key FROM %s ORDER BY rowid' % self.tablename
-        return [key[0] for key in self.conn.select(GET_KEYS)]
+        for key in self.conn.select(GET_KEYS):
+            yield key[0]
+
+    def itervalues(self):
+        GET_VALUES = 'SELECT value FROM %s ORDER BY rowid' % self.tablename
+        for value in self.conn.select(GET_VALUES):
+            yield decode(value[0])
+
+    def iteritems(self):
+        GET_ITEMS = 'SELECT key, value FROM %s ORDER BY rowid' % self.tablename
+        for key, value in self.conn.select(GET_ITEMS):
+            yield key, decode(value)
+
+    def keys(self):
+        return self.iterkeys() if major_version > 2 else list(self.iterkeys())
 
     def values(self):
-        GET_VALUES = 'SELECT value FROM %s ORDER BY rowid' % self.tablename
-        return [decode(value[0]) for value in self.conn.select(GET_VALUES)]
+        return self.itervalues() if major_version > 2 else list(self.itervalues())
 
     def items(self):
-        GET_ITEMS = 'SELECT key, value FROM %s ORDER BY rowid' % self.tablename
-        return [(key, decode(value)) for key, value in self.conn.select(GET_ITEMS)]
+        return self.iteritems() if major_version > 2 else list(self.iteritems())
 
     def __contains__(self, key):
         HAS_ITEM = 'SELECT 1 FROM %s WHERE key = ?' % self.tablename
@@ -222,7 +234,7 @@ class SqliteDict(DictClass):
             self.update(kwds)
 
     def __iter__(self):
-        return iter(self.keys())
+        return self.iterkeys()
 
     def clear(self):
         CLEAR_ALL = 'DELETE FROM %s;' % self.tablename  # avoid VACUUM, as it gives "OperationalError: database schema has changed"
@@ -278,9 +290,6 @@ class SqliteDict(DictClass):
 
 # Adding extra methods for python 2 compatibility (at import time)
 if major_version == 2:
-    setattr(SqliteDict, "iterkeys", lambda self: self.keys())
-    setattr(SqliteDict, "itervalues", lambda self: self.values())
-    setattr(SqliteDict, "iteritems", lambda self: self.items())
     SqliteDict.__nonzero__ = SqliteDict.__bool__
     del SqliteDict.__bool__  # not needed and confusing
 #endclass SqliteDict
