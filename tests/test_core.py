@@ -87,7 +87,9 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
             fname = norm_file('tests/db/sqlitedict-override-test.sqlite')
             orig_db = sqlitedict.SqliteDict(filename=fname, flag = 'FOO')
 
-        self.assertRaises(RuntimeError, build_with_bad_flag)
+        try: build_with_bad_flag()
+        except RuntimeError as e:
+            self.assertTrue(e.message.find('Unrecognized flag') == 0)
 
     def test_readonly(self):
         fname = norm_file('tests/db/sqlitedict-override-test.sqlite')
@@ -101,7 +103,10 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
 
         def attempt_write():
             readonly_db['key'] = ['new_value']
-        self.assertRaises(RuntimeError, attempt_write)
+
+        try: attempt_write()
+        except RuntimeError as e:
+            self.assertTrue(e.message.find('Refusing to write') == 0)
 
     def test_overwrite_using_flag_w(self):
         """Re-opening of a database with flag='w' destroys only the target table."""
