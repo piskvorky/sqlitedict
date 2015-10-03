@@ -137,7 +137,7 @@ class SqliteDict(DictClass):
             filename = os.path.join(tempfile.gettempdir(), 'sqldict' + randpart)
 
         if flag not in SqliteDict.VALID_FLAGS:
-            raise RuntimeError("Unrecognized flag: '{}'".format(flag))
+            raise RuntimeError("Unrecognized flag: %s" % flag)
         self.flag = flag
 
         if flag == 'n':
