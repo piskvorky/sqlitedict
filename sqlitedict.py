@@ -106,6 +106,8 @@ def decode(obj):
 
 
 class SqliteDict(DictClass):
+    VALID_FLAGS = ['c', 'r', 'w', 'n']
+
     def __init__(self, filename=None, tablename='unnamed', flag='c',
                  autocommit=False, journal_mode="DELETE"):
         """
@@ -123,9 +125,10 @@ class SqliteDict(DictClass):
         Set `journal_mode` to 'OFF' if you're experiencing sqlite I/O problems
         or if you need performance and don't care about crash-consistency.
 
-        The `flag` parameter:
+        The `flag` parameter. Exactly one of:
           'c': default mode, open for read/write, creating the db/table if necessary.
           'w': open for r/w, but drop `tablename` contents first (start with empty table)
+          'r': open as read-only
           'n': create a new database (erasing any existing tables, not just `tablename`!).
 
         """
@@ -133,6 +136,11 @@ class SqliteDict(DictClass):
         if self.in_temp:
             randpart = hex(random.randint(0, 0xffffff))[2:]
             filename = os.path.join(tempfile.gettempdir(), 'sqldict' + randpart)
+
+        if flag not in SqliteDict.VALID_FLAGS:
+            raise RuntimeError("Unrecognized flag: %s" % flag)
+        self.flag = flag
+
         if flag == 'n':
             if os.path.exists(filename):
                 os.remove(filename)
@@ -218,6 +226,9 @@ class SqliteDict(DictClass):
         return decode(item[0])
 
     def __setitem__(self, key, value):
+        if self.flag == 'r':
+            raise RuntimeError('Refusing to write to read-only SqliteDict')
+
         ADD_ITEM = 'REPLACE INTO %s (key, value) VALUES (?,?)' % self.tablename
         self.conn.execute(ADD_ITEM, (key, encode(value)))
 
