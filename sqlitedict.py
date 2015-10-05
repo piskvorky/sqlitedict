@@ -125,9 +125,10 @@ class SqliteDict(DictClass):
         Set `journal_mode` to 'OFF' if you're experiencing sqlite I/O problems
         or if you need performance and don't care about crash-consistency.
 
-        The `flag` parameter:
+        The `flag` parameter. Exactly one of:
           'c': default mode, open for read/write, creating the db/table if necessary.
           'w': open for r/w, but drop `tablename` contents first (start with empty table)
+          'r': open as read-only
           'n': create a new database (erasing any existing tables, not just `tablename`!).
 
         """
