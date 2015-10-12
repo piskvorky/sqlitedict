@@ -232,6 +232,9 @@ class SqliteDict(DictClass):
         self.conn.execute(ADD_ITEM, (key, encode(value)))
 
     def __delitem__(self, key):
+        if self.flag == 'r':
+            raise RuntimeError('Refusing to delete from read-only SqliteDict')
+
         if key not in self:
             raise KeyError(key)
         DEL_ITEM = 'DELETE FROM %s WHERE key = ?' % self.tablename
