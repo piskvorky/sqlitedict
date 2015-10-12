@@ -94,33 +94,38 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
         fname = norm_file('tests/db/sqlitedict-override-test.sqlite')
         orig_db = sqlitedict.SqliteDict(filename=fname)
         orig_db['key'] = 'value'
+        orig_db['key_two'] = 2
         orig_db.commit()
         orig_db.close()
 
         readonly_db = sqlitedict.SqliteDict(filename=fname, flag = 'r')
         self.assertTrue(readonly_db['key'] == 'value')
+        self.assertTrue(readonly_db['key_two'] == 2)
 
         def attempt_write():
             readonly_db['key'] = ['new_value']
 
-        with self.assertRaises(RuntimeError):
-            attempt_write()
-
-    def test_readonly_delete(self):
-        fname = norm_file('tests/db/sqlitedict-override-test.sqlite')
-        orig_db = sqlitedict.SqliteDict(filename=fname)
-        orig_db['key'] = 'value'
-        orig_db.commit()
-        orig_db.close()
-
-        readonly_db = sqlitedict.SqliteDict(filename=fname, flag = 'r')
-        self.assertTrue(readonly_db['key'] == 'value')
+        def attempt_update():
+            readonly_db.update(key = 'value2', key_two = 2.1)
 
         def attempt_delete():
             del readonly_db['key']
 
-        with self.assertRaises(RuntimeError):
-            attempt_delete()
+        def attempt_clear():
+            readonly_db.clear()
+
+        def attempt_terminate():
+            readonly_db.terminate()
+
+        attempt_funcs = [attempt_write, 
+                         attempt_update, 
+                         attempt_delete,
+                         attempt_clear,
+                         attempt_terminate]
+
+        for func in attempt_funcs:
+            with self.assertRaises(RuntimeError):
+                func()
 
     def test_overwrite_using_flag_w(self):
         """Re-opening of a database with flag='w' destroys only the target table."""
