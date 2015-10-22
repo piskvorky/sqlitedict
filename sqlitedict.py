@@ -296,10 +296,10 @@ class SqliteDict(DictClass):
                 pass
 
     def terminate(self):
+        """Delete the underlying database file. Use with care."""
         if self.flag == 'r':
             raise RuntimeError('Refusing to terminate read-only SqliteDict')
 
-        """Delete the underlying database file. Use with care."""
         self.close()
 
         if self.filename == ':memory:':
