@@ -294,6 +294,7 @@ class SqliteDict(DictClass):
         if self.filename == ':memory:':
             return
 
+        logger.info("deleting %s" % self.filename)
         try:
             if os.path.isfile(self.filename):
                 os.remove(self.filename)
