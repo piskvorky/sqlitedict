@@ -233,12 +233,18 @@ class SqliteDict(DictClass):
         self.conn.execute(ADD_ITEM, (key, encode(value)))
 
     def __delitem__(self, key):
+        if self.flag == 'r':
+            raise RuntimeError('Refusing to delete from read-only SqliteDict')
+
         if key not in self:
             raise KeyError(key)
         DEL_ITEM = 'DELETE FROM %s WHERE key = ?' % self.tablename
         self.conn.execute(DEL_ITEM, (key,))
 
     def update(self, items=(), **kwds):
+        if self.flag == 'r':
+            raise RuntimeError('Refusing to update read-only SqliteDict')
+
         try:
             items = [(k, encode(v)) for k, v in items.items()]
         except AttributeError:
@@ -253,6 +259,9 @@ class SqliteDict(DictClass):
         return self.iterkeys()
 
     def clear(self):
+        if self.flag == 'r':
+            raise RuntimeError('Refusing to clear read-only SqliteDict')
+
         CLEAR_ALL = 'DELETE FROM %s;' % self.tablename  # avoid VACUUM, as it gives "OperationalError: database schema has changed"
         self.conn.commit()
         self.conn.execute(CLEAR_ALL)
@@ -289,6 +298,9 @@ class SqliteDict(DictClass):
 
     def terminate(self):
         """Delete the underlying database file. Use with care."""
+        if self.flag == 'r':
+            raise RuntimeError('Refusing to terminate read-only SqliteDict')
+
         self.close()
 
         if self.filename == ':memory:':
