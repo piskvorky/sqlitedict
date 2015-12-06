@@ -168,7 +168,7 @@ class SqliteDict(DictClass):
         self.close()
 
     def __str__(self):
-        return "SqliteDict(%s)" % (self.conn.filename)
+        return "SqliteDict(%s)" % (self.filename)
 
     def __repr__(self):
         return str(self)  # no need of something complex
