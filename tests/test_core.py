@@ -26,6 +26,9 @@ class SqliteMiscTest(TestCaseBackport):
         db = sqlitedict.SqliteDict()
         # exercise
         db.__str__()
+        # test when db closed
+        db.close()
+        db.__str__()
 
     def test_as_repr(self):
         """Verify SqliteDict.__repr__()."""
