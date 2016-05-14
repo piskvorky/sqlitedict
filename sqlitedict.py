@@ -246,9 +246,10 @@ class SqliteDict(DictClass):
             raise RuntimeError('Refusing to update read-only SqliteDict')
 
         try:
-            items = [(k, encode(v)) for k, v in items.items()]
+            items = items.items()
         except AttributeError:
             pass
+        items = [(k, encode(v)) for k, v in items]
 
         UPDATE_ITEMS = 'REPLACE INTO %s (key, value) VALUES (?, ?)' % self.tablename
         self.conn.executemany(UPDATE_ITEMS, items)
