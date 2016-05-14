@@ -72,12 +72,12 @@ class TempSqliteDictTest(TestCaseBackport):
     def test_update_records(self):
         ''' test_update_records
         '''
-        self.d.update(p='x', q='y', r='z')
-        self.assertEqual(len(self.d), 3)
+        self.d.update([('v', 'w')], p='x', q='y', r='z')
+        self.assertEqual(len(self.d), 4)
         # As far as I know dicts does not need to return
         # the elements in a specified order (sort() is required )
-        self.assertEqual(sorted(self.d.items()), sorted([('q', 'y'), ('p', 'x'), ('r', 'z')]))
-        self.assertEqual(sorted(list(self.d)), sorted(['q', 'p', 'r']))
+        self.assertEqual(sorted(self.d.items()), sorted([('q', 'y'), ('p', 'x'), ('r', 'z'), ('v', 'w')]))
+        self.assertEqual(sorted(list(self.d)), sorted(['q', 'p', 'r', 'v']))
 
     def test_handling_errors(self):
         ''' test_handling_errors
