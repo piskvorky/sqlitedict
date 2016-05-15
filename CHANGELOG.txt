@@ -1,0 +1,19 @@
+Changes
+=======
+
+1.4.1, 15/05/2016
+* Read-only mode (@nrhine1, #37)
+* Check file exists before deleting (@adibo, #39)
+* AttributeError after SqliteDict is closed (@guyskk, #40)
+* Python 3.5 support (@jtatum, #47)
+* Pickle when updating with 2-tuples seq (@Digenis, #49)
+* Fix exit errors: TypeError("'NoneType' object is not callable",) (@janrygl, #45)
+
+1.4.0
+* fix regression where iterating over keys/values/items returned a full list instead of iterator
+
+1.3.0
+* improve error handling in multithreading (PR #28); 100% test coverage.
+
+1.2.0
+* full python 3 support, continuous testing via Travis CI.
