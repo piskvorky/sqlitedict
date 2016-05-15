@@ -315,7 +315,13 @@ class SqliteDict(DictClass):
 
     def __del__(self):
         # like close(), but assume globals are gone by now (do not log!)
-        self.close(do_log=False)
+        try:
+            self.close(do_log=False)
+        except Exception:
+            # prevent error log flood in case of multiple SqliteDicts
+            # closed after connection lost (exceptions are always ignored
+            # in __del__ method.
+            pass
 
 # Adding extra methods for python 2 compatibility (at import time)
 if major_version == 2:
