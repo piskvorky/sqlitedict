@@ -154,7 +154,7 @@ class SqliteDict(DictClass):
         self.tablename = tablename
 
         logger.info("opening Sqlite table %r in %s" % (tablename, filename))
-        MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS %s (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
+        MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
         self.conn = SqliteMultithread(filename, autocommit=autocommit, journal_mode=journal_mode)
         self.conn.execute(MAKE_TABLE)
         self.conn.commit()
@@ -179,29 +179,29 @@ class SqliteDict(DictClass):
         # We could keep the total count of rows ourselves, by means of triggers,
         # but that seems too complicated and would slow down normal operation
         # (insert/delete etc).
-        GET_LEN = 'SELECT COUNT(*) FROM %s' % self.tablename
+        GET_LEN = 'SELECT COUNT(*) FROM "%s"' % self.tablename
         rows = self.conn.select_one(GET_LEN)[0]
         return rows if rows is not None else 0
 
     def __bool__(self):
         # No elements is False, otherwise True
-        GET_MAX = 'SELECT MAX(ROWID) FROM %s' % self.tablename
+        GET_MAX = 'SELECT MAX(ROWID) FROM "%s"' % self.tablename
         m = self.conn.select_one(GET_MAX)[0]
         # Explicit better than implicit and bla bla
         return True if m is not None else False
 
     def iterkeys(self):
-        GET_KEYS = 'SELECT key FROM %s ORDER BY rowid' % self.tablename
+        GET_KEYS = 'SELECT key FROM "%s" ORDER BY rowid' % self.tablename
         for key in self.conn.select(GET_KEYS):
             yield key[0]
 
     def itervalues(self):
-        GET_VALUES = 'SELECT value FROM %s ORDER BY rowid' % self.tablename
+        GET_VALUES = 'SELECT value FROM "%s" ORDER BY rowid' % self.tablename
         for value in self.conn.select(GET_VALUES):
             yield decode(value[0])
 
     def iteritems(self):
-        GET_ITEMS = 'SELECT key, value FROM %s ORDER BY rowid' % self.tablename
+        GET_ITEMS = 'SELECT key, value FROM "%s" ORDER BY rowid' % self.tablename
         for key, value in self.conn.select(GET_ITEMS):
             yield key, decode(value)
 
@@ -215,11 +215,11 @@ class SqliteDict(DictClass):
         return self.iteritems() if major_version > 2 else list(self.iteritems())
 
     def __contains__(self, key):
-        HAS_ITEM = 'SELECT 1 FROM %s WHERE key = ?' % self.tablename
+        HAS_ITEM = 'SELECT 1 FROM "%s" WHERE key = ?' % self.tablename
         return self.conn.select_one(HAS_ITEM, (key,)) is not None
 
     def __getitem__(self, key):
-        GET_ITEM = 'SELECT value FROM %s WHERE key = ?' % self.tablename
+        GET_ITEM = 'SELECT value FROM "%s" WHERE key = ?' % self.tablename
         item = self.conn.select_one(GET_ITEM, (key,))
         if item is None:
             raise KeyError(key)
@@ -229,7 +229,7 @@ class SqliteDict(DictClass):
         if self.flag == 'r':
             raise RuntimeError('Refusing to write to read-only SqliteDict')
 
-        ADD_ITEM = 'REPLACE INTO %s (key, value) VALUES (?,?)' % self.tablename
+        ADD_ITEM = 'REPLACE INTO "%s" (key, value) VALUES (?,?)' % self.tablename
         self.conn.execute(ADD_ITEM, (key, encode(value)))
 
     def __delitem__(self, key):
@@ -238,7 +238,7 @@ class SqliteDict(DictClass):
 
         if key not in self:
             raise KeyError(key)
-        DEL_ITEM = 'DELETE FROM %s WHERE key = ?' % self.tablename
+        DEL_ITEM = 'DELETE FROM "%s" WHERE key = ?' % self.tablename
         self.conn.execute(DEL_ITEM, (key,))
 
     def update(self, items=(), **kwds):
@@ -251,7 +251,7 @@ class SqliteDict(DictClass):
             pass
         items = [(k, encode(v)) for k, v in items]
 
-        UPDATE_ITEMS = 'REPLACE INTO %s (key, value) VALUES (?, ?)' % self.tablename
+        UPDATE_ITEMS = 'REPLACE INTO "%s" (key, value) VALUES (?, ?)' % self.tablename
         self.conn.executemany(UPDATE_ITEMS, items)
         if kwds:
             self.update(kwds)
@@ -263,7 +263,7 @@ class SqliteDict(DictClass):
         if self.flag == 'r':
             raise RuntimeError('Refusing to clear read-only SqliteDict')
 
-        CLEAR_ALL = 'DELETE FROM %s;' % self.tablename  # avoid VACUUM, as it gives "OperationalError: database schema has changed"
+        CLEAR_ALL = 'DELETE FROM "%s";' % self.tablename  # avoid VACUUM, as it gives "OperationalError: database schema has changed"
         self.conn.commit()
         self.conn.execute(CLEAR_ALL)
         self.conn.commit()
