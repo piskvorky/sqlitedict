@@ -144,6 +144,9 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
         self.assertEqual(db['key'], 'value')
         db.close()
 
+        self.assertRaisesRegexp(ValueError, r'^Invalid tablename ',
+                                sqlitedict.SqliteDict, ':memory:', '"')
+
     def test_overwrite_using_flag_w(self):
         """Re-opening of a database with flag='w' destroys only the target table."""
         # given,

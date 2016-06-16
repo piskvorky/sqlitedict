@@ -151,6 +151,8 @@ class SqliteDict(DictClass):
                 raise RuntimeError('Error! The directory does not exist, %s' % dirname)
 
         self.filename = filename
+        if '"' in tablename:
+            raise ValueError('Invalid tablename %r' % tablename)
         self.tablename = tablename
 
         logger.info("opening Sqlite table %r in %s" % (tablename, filename))
