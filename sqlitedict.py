@@ -154,16 +154,23 @@ class SqliteDict(DictClass):
         if '"' in tablename:
             raise ValueError('Invalid tablename %r' % tablename)
         self.tablename = tablename
+        self.autocommit = autocommit
+        self.journal_mode = journal_mode
 
         logger.info("opening Sqlite table %r in %s" % (tablename, filename))
         MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
-        self.conn = SqliteMultithread(filename, autocommit=autocommit, journal_mode=journal_mode)
+        self.conn = self._new_conn()
         self.conn.execute(MAKE_TABLE)
         self.conn.commit()
         if flag == 'w':
             self.clear()
 
+    def _new_conn(self):
+        return SqliteMultithread(self.filename, autocommit=self.autocommit, journal_mode=self.journal_mode)
+
     def __enter__(self):
+        if not hasattr(self, 'conn') or self.conn is None:
+            self.conn = self._new_conn()
         return self
 
     def __exit__(self, *exc_info):
