@@ -288,7 +288,7 @@ class SqliteDict(DictClass):
             self.conn.commit(blocking)
     sync = commit
 
-    def close(self, do_log=True):
+    def close(self, do_log=True, force=False):
         if do_log:
             logger.debug("closing %s" % self)
         if hasattr(self, 'conn') and self.conn is not None:
@@ -298,7 +298,7 @@ class SqliteDict(DictClass):
                 # awaiting exceptions are handled and that all data is
                 # persisted to disk before returning.
                 self.conn.commit(blocking=True)
-            self.conn.close()
+            self.conn.close(force=force)
             self.conn = None
         if self.in_temp:
             try:
@@ -326,7 +326,7 @@ class SqliteDict(DictClass):
     def __del__(self):
         # like close(), but assume globals are gone by now (do not log!)
         try:
-            self.close(do_log=False)
+            self.close(do_log=False, force=True)
         except Exception:
             # prevent error log flood in case of multiple SqliteDicts
             # closed after connection lost (exceptions are always ignored
@@ -503,10 +503,18 @@ class SqliteMultithread(Thread):
             # otherwise, we fire and forget as usual.
             self.execute('--commit--')
 
-    def close(self):
-        # we abuse 'select' to "iter" over a "--close--" statement so that we
-        # can confirm the completion of close before joining the thread and
-        # returning (by semaphore '--no more--'
-        self.select_one('--close--')
+    def close(self, force=False):
+        if force:
+            # If a SqliteDict is being killed or garbage-collected, then select_one()
+            # could hang forever because run() might already have exited and therefore
+            # can't process the request. Instead, push the close command to the requests
+            # queue directly. If run() is still alive, it will exit gracefully. If not,
+            # then there's nothing we can do anyway.
+            self.reqs.put('--close--', None, None, None)
+        else:
+            # we abuse 'select' to "iter" over a "--close--" statement so that we
+            # can confirm the completion of close before joining the thread and
+            # returning (by semaphore '--no more--'
+            self.select_one('--close--')
         self.join()
 #endclass SqliteMultithread
