@@ -292,7 +292,7 @@ class SqliteDict(DictClass):
         if do_log:
             logger.debug("closing %s" % self)
         if hasattr(self, 'conn') and self.conn is not None:
-            if self.conn.autocommit:
+            if self.conn.autocommit and not force:
                 # typically calls to commit are non-blocking when autocommit is
                 # used.  However, we need to block on close() to ensure any
                 # awaiting exceptions are handled and that all data is
