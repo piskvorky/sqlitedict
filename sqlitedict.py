@@ -510,11 +510,11 @@ class SqliteMultithread(Thread):
             # can't process the request. Instead, push the close command to the requests
             # queue directly. If run() is still alive, it will exit gracefully. If not,
             # then there's nothing we can do anyway.
-            self.reqs.put('--close--', None, None, None)
+            self.reqs.put(('--close--', None, Queue(), None))
         else:
             # we abuse 'select' to "iter" over a "--close--" statement so that we
             # can confirm the completion of close before joining the thread and
             # returning (by semaphore '--no more--'
             self.select_one('--close--')
-        self.join()
+            self.join()
 #endclass SqliteMultithread
