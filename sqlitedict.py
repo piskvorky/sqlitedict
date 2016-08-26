@@ -154,16 +154,23 @@ class SqliteDict(DictClass):
         if '"' in tablename:
             raise ValueError('Invalid tablename %r' % tablename)
         self.tablename = tablename
+        self.autocommit = autocommit
+        self.journal_mode = journal_mode
 
         logger.info("opening Sqlite table %r in %s" % (tablename, filename))
         MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
-        self.conn = SqliteMultithread(filename, autocommit=autocommit, journal_mode=journal_mode)
+        self.conn = self._new_conn()
         self.conn.execute(MAKE_TABLE)
         self.conn.commit()
         if flag == 'w':
             self.clear()
 
+    def _new_conn(self):
+        return SqliteMultithread(self.filename, autocommit=self.autocommit, journal_mode=self.journal_mode)
+
     def __enter__(self):
+        if not hasattr(self, 'conn') or self.conn is None:
+            self.conn = self._new_conn()
         return self
 
     def __exit__(self, *exc_info):
@@ -281,17 +288,17 @@ class SqliteDict(DictClass):
             self.conn.commit(blocking)
     sync = commit
 
-    def close(self, do_log=True):
+    def close(self, do_log=True, force=False):
         if do_log:
             logger.debug("closing %s" % self)
         if hasattr(self, 'conn') and self.conn is not None:
-            if self.conn.autocommit:
+            if self.conn.autocommit and not force:
                 # typically calls to commit are non-blocking when autocommit is
                 # used.  However, we need to block on close() to ensure any
                 # awaiting exceptions are handled and that all data is
                 # persisted to disk before returning.
                 self.conn.commit(blocking=True)
-            self.conn.close()
+            self.conn.close(force=force)
             self.conn = None
         if self.in_temp:
             try:
@@ -319,7 +326,7 @@ class SqliteDict(DictClass):
     def __del__(self):
         # like close(), but assume globals are gone by now (do not log!)
         try:
-            self.close(do_log=False)
+            self.close(do_log=False, force=True)
         except Exception:
             # prevent error log flood in case of multiple SqliteDicts
             # closed after connection lost (exceptions are always ignored
@@ -496,10 +503,18 @@ class SqliteMultithread(Thread):
             # otherwise, we fire and forget as usual.
             self.execute('--commit--')
 
-    def close(self):
-        # we abuse 'select' to "iter" over a "--close--" statement so that we
-        # can confirm the completion of close before joining the thread and
-        # returning (by semaphore '--no more--'
-        self.select_one('--close--')
-        self.join()
+    def close(self, force=False):
+        if force:
+            # If a SqliteDict is being killed or garbage-collected, then select_one()
+            # could hang forever because run() might already have exited and therefore
+            # can't process the request. Instead, push the close command to the requests
+            # queue directly. If run() is still alive, it will exit gracefully. If not,
+            # then there's nothing we can do anyway.
+            self.reqs.put(('--close--', None, Queue(), None))
+        else:
+            # we abuse 'select' to "iter" over a "--close--" statement so that we
+            # can confirm the completion of close before joining the thread and
+            # returning (by semaphore '--no more--'
+            self.select_one('--close--')
+            self.join()
 #endclass SqliteMultithread

@@ -20,6 +20,17 @@ class SqliteMiscTest(TestCaseBackport):
             self.assertEqual(list(d), [])
             self.assertEqual(len(d), 0)
 
+    def test_reopen_conn(self):
+        """Verify using a contextmanager that a connection can be reopened."""
+        fname = norm_file('tests/db/sqlitedict-override-test.sqlite')
+        db = sqlitedict.SqliteDict(filename=fname)
+        with db:
+            db['key'] = 'value'
+            db.commit()
+        with db:
+            db['key'] = 'value'
+            db.commit()
+
     def test_as_str(self):
         """Verify SqliteDict.__str__()."""
         # given,
