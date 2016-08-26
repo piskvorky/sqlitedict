@@ -1,5 +1,8 @@
 Changes
 =======
+1.4.2, 26/08/2016
+* Fix some hangs on closing. Let __enter__ re-open a closed connection. (@ecederstrand, #55)
+* Surround table names with quotes. (@Digenis, #50)
 
 1.4.1, 15/05/2016
 * Read-only mode (@nrhine1, #37)
