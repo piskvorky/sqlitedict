@@ -46,7 +46,7 @@ SetupDevelop.__doc__ = setuptools.command.develop.develop.__doc__
 
 setup(
     name='sqlitedict',
-    version='1.4.1',
+    version='1.4.2',
     description='Persistent dict in Python, backed up by sqlite3 and pickle, multithread-safe.',
     long_description=read('README.rst'),
 
