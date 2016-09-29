@@ -3,7 +3,6 @@ sqlitedict -- persistent ``dict``, backed-up by SQLite and pickle
 =================================================================
 
 |Travis|_
-|Downloads|_
 |License|_
 
 .. |Travis| image:: https://img.shields.io/travis/RaRe-Technologies/sqlitedict.svg
