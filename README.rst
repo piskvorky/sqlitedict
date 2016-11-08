@@ -60,7 +60,7 @@ Concurrent requests are still serialized internally, so this "multithreaded supp
 Installation
 ------------
 
-The module has no dependencies beyond Python itself. The minimum Python version is 2.5, continuously tested on Python 2.6, 2.7, 3.3 and 3.4 `on Travis <https://travis-ci.org/piskvorky/sqlitedict>`_.
+The module has no dependencies beyond Python itself. The minimum Python version is 2.5, continuously tested on Python 2.6, 2.7, 3.3 and 3.4 `on Travis <https://travis-ci.org/RaRe-Technologies/sqlitedict>`_.
 
 Install or upgrade with::
 
@@ -114,7 +114,7 @@ To perform all tests with coverage::
 Comments, bug reports
 ---------------------
 
-``sqlitedict`` resides on `github <https://github.com/piskvorky/sqlitedict>`_. You can file
+``sqlitedict`` resides on `github <https://github.com/RaRe-Technologies/sqlitedict>`_. You can file
 issues or pull requests there.
 
 
