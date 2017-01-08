@@ -9,6 +9,12 @@ python:
   - "3.3"
   - "2.7"
   - "2.6"
+addons:
+   apt:
+     sources:
+       - travis-ci/sqlite3
+     packages:
+       - sqlite3
 install: 
   - python setup.py install
   - python -c "import sqlite3 as sqlite; print(sqlite.sqlite_version)"
