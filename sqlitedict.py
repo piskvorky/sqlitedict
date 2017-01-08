@@ -368,6 +368,7 @@ class SqliteMultithread(Thread):
         conn.execute('PRAGMA journal_mode = %s' % self.journal_mode)
         conn.text_factory = str
         cursor = conn.cursor()
+        conn.commit()
         cursor.execute('PRAGMA synchronous=OFF')
 
         res = None
