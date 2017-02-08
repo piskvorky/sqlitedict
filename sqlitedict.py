@@ -109,7 +109,7 @@ class SqliteDict(DictClass):
     VALID_FLAGS = ['c', 'r', 'w', 'n']
 
     def __init__(self, filename=None, tablename='unnamed', flag='c',
-                 autocommit=False, journal_mode="DELETE"):
+                 autocommit=False, journal_mode="DELETE", encode=encode, decode=decode):
         """
         Initialize a thread-safe sqlite-backed dictionary. The dictionary will
         be a table `tablename` in database file `filename`. A single file (=database)
@@ -130,6 +130,15 @@ class SqliteDict(DictClass):
           'w': open for r/w, but drop `tablename` contents first (start with empty table)
           'r': open as read-only
           'n': create a new database (erasing any existing tables, not just `tablename`!).
+
+        The `encode` and `decode` parameters are used to customize how the values
+        are serialized and deserialized.
+        The `encode` parameter must be a function that takes a single Python
+        object and returns a serialized representation.
+        The `decode` function must be a function that takes the serialized
+        representation produced by `encode` and returns a deserialized Python
+        object.
+        The default is to use pickle.
 
         """
         self.in_temp = filename is None
@@ -156,6 +165,8 @@ class SqliteDict(DictClass):
         self.tablename = tablename
         self.autocommit = autocommit
         self.journal_mode = journal_mode
+        self.encode = encode
+        self.decode = decode
 
         logger.info("opening Sqlite table %r in %s" % (tablename, filename))
         MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
@@ -207,12 +218,12 @@ class SqliteDict(DictClass):
     def itervalues(self):
         GET_VALUES = 'SELECT value FROM "%s" ORDER BY rowid' % self.tablename
         for value in self.conn.select(GET_VALUES):
-            yield decode(value[0])
+            yield self.decode(value[0])
 
     def iteritems(self):
         GET_ITEMS = 'SELECT key, value FROM "%s" ORDER BY rowid' % self.tablename
         for key, value in self.conn.select(GET_ITEMS):
-            yield key, decode(value)
+            yield key, self.decode(value)
 
     def keys(self):
         return self.iterkeys() if major_version > 2 else list(self.iterkeys())
@@ -232,14 +243,14 @@ class SqliteDict(DictClass):
         item = self.conn.select_one(GET_ITEM, (key,))
         if item is None:
             raise KeyError(key)
-        return decode(item[0])
+        return self.decode(item[0])
 
     def __setitem__(self, key, value):
         if self.flag == 'r':
             raise RuntimeError('Refusing to write to read-only SqliteDict')
 
         ADD_ITEM = 'REPLACE INTO "%s" (key, value) VALUES (?,?)' % self.tablename
-        self.conn.execute(ADD_ITEM, (key, encode(value)))
+        self.conn.execute(ADD_ITEM, (key, self.encode(value)))
 
     def __delitem__(self, key):
         if self.flag == 'r':
@@ -258,7 +269,7 @@ class SqliteDict(DictClass):
             items = items.items()
         except AttributeError:
             pass
-        items = [(k, encode(v)) for k, v in items]
+        items = [(k, self.encode(v)) for k, v in items]
 
         UPDATE_ITEMS = 'REPLACE INTO "%s" (key, value) VALUES (?, ?)' % self.tablename
         self.conn.executemany(UPDATE_ITEMS, items)
