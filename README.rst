@@ -54,8 +54,25 @@ Features
   Vanilla sqlite3 gives you ``ProgrammingError: SQLite objects created in a thread can
   only be used in that same thread.``
 
-Concurrent requests are still serialized internally, so this "multithreaded support"
-**doesn't** give you any performance benefits. It is a work-around for sqlite limitations in Python.
+  Concurrent requests are still serialized internally, so this "multithreaded support"
+  **doesn't** give you any performance benefits. It is a work-around for sqlite limitations in Python.
+
+* Support for **custom serialization or compression**:
+
+  .. code-block:: python
+
+      # use JSON instead of pickle
+      >>> import json
+      >>> mydict = SqliteDict('./my_db.sqlite', encode=json.dumps, decode=json.loads)
+
+      # apply zlib compression after pickling
+      >>> import zlib, pickle, sqlite3
+      >>> def my_encode(obj):
+      ...     return sqlite3.Binary(zlib.compress(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)))
+      >>> def my_decode(obj):
+      ...     return pickle.loads(zlib.decompress(bytes(obj)))
+      >>> mydict = SqliteDict('./my_db.sqlite', encode=my_encode, decode=my_decode)
+
 
 Installation
 ------------

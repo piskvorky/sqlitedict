@@ -1,4 +1,5 @@
 # std imports
+import json
 import unittest
 import tempfile
 import sys
@@ -216,3 +217,48 @@ class SqliteDictTerminateFailTest(unittest.TestCase):
         os.chmod(os.path.dirname(self.fname), 0o700)
         os.chmod(self.fname, 0o600)
         self.assertTrue(os.path.exists(self.fname))
+
+class SqliteDictJsonSerializationTest(unittest.TestCase):
+    def setUp(self):
+        self.fname = norm_file('tests/db-json/sqlitedict.sqlite')
+        self.db = sqlitedict.SqliteDict(
+            filename=self.fname, tablename='test', encode=json.dumps, decode=json.loads
+        )
+
+    def tearDown(self):
+        self.db.close()
+        os.unlink(self.fname)
+        os.rmdir(os.path.dirname(self.fname))
+
+    def get_json(self, key):
+        return self.db.conn.select_one('SELECT value FROM test WHERE key = ?', (key,))[0]
+
+    def test_int(self):
+        self.db['test'] = -42
+        assert self.db['test'] == -42
+        assert self.get_json('test') == '-42'
+
+    def test_str(self):
+        test_str = u'Test \u30c6\u30b9\u30c8'
+        self.db['test'] = test_str
+        assert self.db['test'] == test_str
+        assert self.get_json('test') == r'"Test \u30c6\u30b9\u30c8"'
+
+    def test_bool(self):
+        self.db['test'] = False
+        assert self.db['test'] is False
+        assert self.get_json('test') == 'false'
+
+    def test_none(self):
+        self.db['test'] = None
+        assert self.db['test'] is None
+        assert self.get_json('test') == 'null'
+
+    def test_complex_struct(self):
+        test_value = {
+            'version': 2.5,
+            'items': ['one', 'two'],
+        }
+        self.db['test'] = test_value
+        assert self.db['test'] == test_value
+        assert self.get_json('test') == json.dumps(test_value)
