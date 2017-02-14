@@ -1,5 +1,10 @@
 Changes
 =======
+1.5.0, 13/02/2017
+* Add encode and decode parameters to store json, compressed or pickled objects (@erosennin, #65)
+* Python 3.6 fix: commit before turning off synchronous (@bit, #59)
+* Update sqlite version to 3.8.2 (@tmylk, #63)
+
 1.4.2, 26/08/2016
 * Fix some hangs on closing. Let __enter__ re-open a closed connection. (@ecederstrand, #55)
 * Surround table names with quotes. (@Digenis, #50)
