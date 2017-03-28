@@ -128,6 +128,18 @@ To perform all tests with coverage::
    # make test-all-with-coverage
 
 
+
+**Note**: due to the way the keys are handled internally, mydict[5] and mydict['5'] both refer to the single key '5'::
+
+>>> mydict = sqlitedict.SqliteDict()
+>>> mydict[9] = 'town'
+>>> mydict['4'] = 'zebra'
+>>> mydict.keys()
+>>> # ['9', '4']
+>>> mydict[4]
+>>> # 'zebra'
+
+
 Comments, bug reports
 ---------------------
 
