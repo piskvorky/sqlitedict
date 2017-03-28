@@ -66,6 +66,11 @@ class SqliteMiscTest(TestCaseBackport):
             d['key'] = 'value'
             d.commit(blocking=False)
 
+    def test_autocommit_false(self):
+        """Test autocommit=False mode."""
+        with sqlitedict.SqliteDict(autocommit=False) as d:
+            d['key'] = 'value'
+            d.commit()
 
 class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
     """Verify default flag='c', and flag='n' of SqliteDict()."""
