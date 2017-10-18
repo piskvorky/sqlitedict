@@ -4,6 +4,8 @@ language: python
 notifications:
   email: false
 python:
+  - "pypy"
+  - "pypy3"
   - "3.6"
   - "3.5"
   - "3.4"
