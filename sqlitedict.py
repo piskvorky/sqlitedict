@@ -108,8 +108,7 @@ def decode(obj):
 def print_tablename(filename):
     """print tablenames and return them as list. Returns empty list if file does not exist (instead of creating that file)"""
     if not os.path.isfile(filename):
-        logger.warning('file %s does not exist' %filename)
-        return
+        raise IOError('file %s does not exist' % (filename))
     conn = sqlite3.connect(filename)
     res = conn.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tablenames = [name[0] for name in res]
