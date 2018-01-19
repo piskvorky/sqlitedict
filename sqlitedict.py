@@ -105,14 +105,13 @@ def decode(obj):
     return loads(bytes(obj))
 
 
-def print_tablename(filename):
+def get_tablenames(filename):
     """print tablenames and return them as list. Returns empty list if file does not exist (instead of creating that file)"""
     if not os.path.isfile(filename):
         raise IOError('file %s does not exist' % (filename))
     conn = sqlite3.connect(filename)
     res = conn.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tablenames = [name[0] for name in res]
-    print(tablenames)
     conn.close()
     return tablenames
 
@@ -299,6 +298,12 @@ class SqliteDict(DictClass):
         self.conn.commit()
         self.conn.execute(CLEAR_ALL)
         self.conn.commit()
+
+    def get_tablenames(self):
+        """print tablenames and return them as list"""
+        res = self.conn.select("SELECT name FROM sqlite_master WHERE type='table';")
+        return [name[0] for name in res]
+
 
     def commit(self, blocking=True):
         """
