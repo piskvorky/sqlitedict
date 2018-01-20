@@ -262,3 +262,23 @@ class SqliteDictJsonSerializationTest(unittest.TestCase):
         self.db['test'] = test_value
         assert self.db['test'] == test_value
         assert self.get_json('test') == json.dumps(test_value)
+
+
+class TablenamesTest(TestCaseBackport):
+
+    def test_tablenames(self):
+        fname = norm_file('tests/db/tablenames-test-1.sqlite')
+        db = sqlitedict.SqliteDict(fname) 
+        self.assertEqual(db.get_tablenames(), ['unnamed'])
+        db.close()
+
+        fname = norm_file('tests/db/tablenames-test-2.sqlite')
+        db1 = sqlitedict.SqliteDict(fname,tablename='table1')         
+        self.assertEqual(db1.get_tablenames(), ['table1'])
+        db2 = sqlitedict.SqliteDict(fname,tablename='table2') 
+        self.assertEqual(db1.get_tablenames(), ['table1','table2'])
+        db1.close()
+        db2.close()
+
+        tablenames = sqlitedict.get_tablenames('tests/db/tablenames-test-2t.sqlite')
+        self.assertEqual(tablenames, ['table1','table2'])

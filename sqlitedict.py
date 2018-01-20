@@ -106,14 +106,18 @@ def decode(obj):
 
 
 def get_tablenames(filename):
-    """print tablenames and return them as list. Returns empty list if file does not exist (instead of creating that file)"""
+    """get the names of the tables in an sqlite db as a list"""
     if not os.path.isfile(filename):
-        raise IOError('file %s does not exist' % (filename))
+        raise IOError('file %s does not exist' % (filename))   
     conn = sqlite3.connect(filename)
-    res = conn.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tablenames = [name[0] for name in res]
+    cursor = conn.cursor()
+    GET_TABLENAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
+    cursor.execute(GET_TABLENAMES)
+    res = cursor.fetchall()
     conn.close()
-    return tablenames
+
+    return [name[0] for name in res]
+
 
 
 class SqliteDict(DictClass):
@@ -300,9 +304,8 @@ class SqliteDict(DictClass):
         self.conn.commit()
 
     def get_tablenames(self):
-        """print tablenames and return them as list"""
-        res = self.conn.select("SELECT name FROM sqlite_master WHERE type='table';")
-        return [name[0] for name in res]
+        """ get tablesnames as list"""
+        return get_tablenames(self.filename)
 
 
     def commit(self, blocking=True):
@@ -514,7 +517,7 @@ class SqliteMultithread(Thread):
                 break
             yield rec
 
-    def select_one(self, req, arg=None):
+    def select_one(self, req, arg=None):    
         """Return only the first row of the SELECT, or None if there are no matching rows."""
         try:
             return next(iter(self.select(req, arg)))
