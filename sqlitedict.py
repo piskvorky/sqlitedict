@@ -110,9 +110,8 @@ def get_tablenames(filename):
     if not os.path.isfile(filename):
         raise IOError('file %s does not exist' % (filename))   
     conn = sqlite3.connect(filename)
-    cursor = conn.cursor()
     GET_TABLENAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
-    cursor.execute(GET_TABLENAMES)
+    cursor = conn.execute(GET_TABLENAMES)
     res = cursor.fetchall()
     conn.close()
 
