@@ -280,5 +280,5 @@ class TablenamesTest(TestCaseBackport):
         db1.close()
         db2.close()
 
-        tablenames = sqlitedict.get_tablenames('tests/db/tablenames-test-2t.sqlite')
+        tablenames = sqlitedict.get_tablenames('tests/db/tablenames-test-2.sqlite')
         self.assertEqual(tablenames, ['table1','table2'])
