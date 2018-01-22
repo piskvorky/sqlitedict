@@ -268,17 +268,14 @@ class TablenamesTest(TestCaseBackport):
 
     def test_tablenames(self):
         fname = norm_file('tests/db/tablenames-test-1.sqlite')
-        db = sqlitedict.SqliteDict(fname) 
-        self.assertEqual(db.get_tablenames(), ['unnamed'])
-        db.close()
+        with sqlitedict.SqliteDict(fname) as db:
+            self.assertEqual(db.get_tablenames(), ['unnamed'])
 
         fname = norm_file('tests/db/tablenames-test-2.sqlite')
-        db1 = sqlitedict.SqliteDict(fname,tablename='table1')         
-        self.assertEqual(db1.get_tablenames(), ['table1'])
-        db2 = sqlitedict.SqliteDict(fname,tablename='table2') 
-        self.assertEqual(db1.get_tablenames(), ['table1','table2'])
-        db1.close()
-        db2.close()
-
+        with sqlitedict.SqliteDict(fname,tablename='table1') as db1:   
+            self.assertEqual(db1.get_tablenames(), ['table1'])
+            with sqlitedict.SqliteDict(fname,tablename='table2') as db2:  
+                self.assertEqual(db1.get_tablenames(), ['table1','table2'])
+        
         tablenames = sqlitedict.get_tablenames('tests/db/tablenames-test-2.sqlite')
         self.assertEqual(tablenames, ['table1','table2'])
