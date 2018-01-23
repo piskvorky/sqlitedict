@@ -105,20 +105,6 @@ def decode(obj):
     return loads(bytes(obj))
 
 
-def get_tablenames(filename):
-    """get the names of the tables in an sqlite db as a list"""
-    if not os.path.isfile(filename):
-        raise IOError('file %s does not exist' % (filename))   
-    conn = sqlite3.connect(filename)
-    GET_TABLENAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
-    cursor = conn.execute(GET_TABLENAMES)
-    res = cursor.fetchall()
-    conn.close()
-
-    return [name[0] for name in res]
-
-
-
 class SqliteDict(DictClass):
     VALID_FLAGS = ['c', 'r', 'w', 'n']
 
@@ -302,10 +288,18 @@ class SqliteDict(DictClass):
         self.conn.execute(CLEAR_ALL)
         self.conn.commit()
 
-    def get_tablenames(self):
-        """ get tablesnames as list"""
-        return get_tablenames(self.filename)
+    @staticmethod
+    def get_tablenames(filename):
+        """get the names of the tables in an sqlite db as a list"""
+        if not os.path.isfile(filename):
+            raise IOError('file %s does not exist' % (filename))   
+        conn = sqlite3.connect(filename)
+        GET_TABLENAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
+        cursor = conn.execute(GET_TABLENAMES)
+        res = cursor.fetchall()
+        conn.close()
 
+        return [name[0] for name in res]
 
     def commit(self, blocking=True):
         """
