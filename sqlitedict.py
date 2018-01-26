@@ -288,6 +288,18 @@ class SqliteDict(DictClass):
         self.conn.execute(CLEAR_ALL)
         self.conn.commit()
 
+    @staticmethod
+    def get_tablenames(filename):
+        """get the names of the tables in an sqlite db as a list"""
+        if not os.path.isfile(filename):
+            raise IOError('file %s does not exist' % (filename))
+        GET_TABLENAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
+        with sqlite3.connect(filename) as conn:
+            cursor = conn.execute(GET_TABLENAMES)
+            res = cursor.fetchall()
+
+        return [name[0] for name in res]
+
     def commit(self, blocking=True):
         """
         Persist all data to disk.

@@ -11,7 +11,7 @@ from accessories import TestCaseBackport
 
 from sys import version_info
 major_version = version_info[0]
-
+from accessories import norm_file
 
 class TempSqliteDictTest(TestCaseBackport):
 
