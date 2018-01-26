@@ -7,6 +7,7 @@ import os
 
 # local
 import sqlitedict
+from sqlitedict import SqliteDict
 from test_temp_db import TempSqliteDictTest
 from accessories import norm_file, TestCaseBackport
 
@@ -15,8 +16,8 @@ class SqliteMiscTest(TestCaseBackport):
 
     def test_with_statement(self):
         """Verify using sqlitedict as a contextmanager . """
-        with sqlitedict.SqliteDict() as d:
-            self.assertTrue(isinstance(d, sqlitedict.SqliteDict))
+        with SqliteDict() as d:
+            self.assertTrue(isinstance(d, SqliteDict))
             self.assertEqual(dict(d), {})
             self.assertEqual(list(d), [])
             self.assertEqual(len(d), 0)
@@ -24,7 +25,7 @@ class SqliteMiscTest(TestCaseBackport):
     def test_reopen_conn(self):
         """Verify using a contextmanager that a connection can be reopened."""
         fname = norm_file('tests/db/sqlitedict-override-test.sqlite')
-        db = sqlitedict.SqliteDict(filename=fname)
+        db = SqliteDict(filename=fname)
         with db:
             db['key'] = 'value'
             db.commit()
@@ -35,7 +36,7 @@ class SqliteMiscTest(TestCaseBackport):
     def test_as_str(self):
         """Verify SqliteDict.__str__()."""
         # given,
-        db = sqlitedict.SqliteDict()
+        db = SqliteDict()
         # exercise
         db.__str__()
         # test when db closed
@@ -45,7 +46,7 @@ class SqliteMiscTest(TestCaseBackport):
     def test_as_repr(self):
         """Verify SqliteDict.__repr__()."""
         # given,
-        db = sqlitedict.SqliteDict()
+        db = SqliteDict()
         # exercise
         db.__repr__()
 
@@ -56,12 +57,12 @@ class SqliteMiscTest(TestCaseBackport):
         os.rmdir(folder)
         # exercise,
         with self.assertRaises(RuntimeError):
-            sqlitedict.SqliteDict(filename=os.path.join(folder, 'nonexistent'))
+            SqliteDict(filename=os.path.join(folder, 'nonexistent'))
 
     def test_commit_nonblocking(self):
         """Coverage for non-blocking commit."""
         # given,
-        with sqlitedict.SqliteDict(autocommit=True) as d:
+        with SqliteDict(autocommit=True) as d:
             # exercise: the implicit commit is nonblocking
             d['key'] = 'value'
             d.commit(blocking=False)
@@ -74,12 +75,12 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
         """Re-opening of a database does not destroy it."""
         # given,
         fname = norm_file('tests/db/sqlitedict-override-test.sqlite')
-        orig_db = sqlitedict.SqliteDict(filename=fname)
+        orig_db = SqliteDict(filename=fname)
         orig_db['key'] = 'value'
         orig_db.commit()
         orig_db.close()
 
-        next_db = sqlitedict.SqliteDict(filename=fname)
+        next_db = SqliteDict(filename=fname)
         self.assertIn('key', next_db.keys())
         self.assertEqual(next_db['key'], 'value')
 
@@ -87,33 +88,33 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
         """Re-opening of a database with flag='c' destroys it all."""
         # given,
         fname = norm_file('tests/db/sqlitedict-override-test.sqlite')
-        orig_db = sqlitedict.SqliteDict(filename=fname, tablename='sometable')
+        orig_db = SqliteDict(filename=fname, tablename='sometable')
         orig_db['key'] = 'value'
         orig_db.commit()
         orig_db.close()
 
         # verify,
-        next_db = sqlitedict.SqliteDict(filename=fname, tablename='sometable', flag='n')
+        next_db = SqliteDict(filename=fname, tablename='sometable', flag='n')
         self.assertNotIn('key', next_db.keys())
 
     def test_unrecognized_flag(self):
 
         def build_with_bad_flag():
             fname = norm_file('tests/db/sqlitedict-override-test.sqlite')
-            orig_db = sqlitedict.SqliteDict(filename=fname, flag = 'FOO')
+            orig_db = SqliteDict(filename=fname, flag = 'FOO')
 
         with self.assertRaises(RuntimeError):
             build_with_bad_flag()
 
     def test_readonly(self):
         fname = norm_file('tests/db/sqlitedict-override-test.sqlite')
-        orig_db = sqlitedict.SqliteDict(filename=fname)
+        orig_db = SqliteDict(filename=fname)
         orig_db['key'] = 'value'
         orig_db['key_two'] = 2
         orig_db.commit()
         orig_db.close()
 
-        readonly_db = sqlitedict.SqliteDict(filename=fname, flag = 'r')
+        readonly_db = SqliteDict(filename=fname, flag = 'r')
         self.assertTrue(readonly_db['key'] == 'value')
         self.assertTrue(readonly_db['key_two'] == 2)
 
@@ -144,31 +145,31 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
 
     def test_irregular_tablenames(self):
         """Irregular table names need to be quoted"""
-        db = sqlitedict.SqliteDict(':memory:', tablename='9nine')
+        db = SqliteDict(':memory:', tablename='9nine')
         db['key'] = 'value'
         db.commit()
         self.assertEqual(db['key'], 'value')
         db.close()
 
-        db = sqlitedict.SqliteDict(':memory:', tablename='outer space')
+        db = SqliteDict(':memory:', tablename='outer space')
         db['key'] = 'value'
         db.commit()
         self.assertEqual(db['key'], 'value')
         db.close()
 
         with self.assertRaisesRegexp(ValueError, r'^Invalid tablename '):
-            sqlitedict.SqliteDict(':memory:', '"')
+            SqliteDict(':memory:', '"')
  
     def test_overwrite_using_flag_w(self):
         """Re-opening of a database with flag='w' destroys only the target table."""
         # given,
         fname = norm_file('tests/db/sqlitedict-override-test.sqlite')
-        orig_db_1 = sqlitedict.SqliteDict(filename=fname, tablename='one')
+        orig_db_1 = SqliteDict(filename=fname, tablename='one')
         orig_db_1['key'] = 'value'
         orig_db_1.commit()
         orig_db_1.close()
 
-        orig_db_2 = sqlitedict.SqliteDict(filename=fname, tablename='two')
+        orig_db_2 = SqliteDict(filename=fname, tablename='two')
         orig_db_2['key'] = 'value'
         orig_db_2.commit()
         orig_db_2.close()
@@ -176,10 +177,10 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
         # verify, when re-opening table space 'one' with flag='2', we destroy
         # its contents.  However, when re-opening table space 'two' with
         # default flag='r', its contents remain.
-        next_db_1 = sqlitedict.SqliteDict(filename=fname, tablename='one', flag='w')
+        next_db_1 = SqliteDict(filename=fname, tablename='one', flag='w')
         self.assertNotIn('key', next_db_1.keys())
 
-        next_db_2 = sqlitedict.SqliteDict(filename=fname, tablename='two')
+        next_db_2 = SqliteDict(filename=fname, tablename='two')
         self.assertIn('key', next_db_2.keys())
 
 class SqliteDictTerminateTest(unittest.TestCase):
@@ -199,7 +200,7 @@ class SqliteDictTerminateFailTest(unittest.TestCase):
 
     def setUp(self):
         self.fname = norm_file('tests/db-permdenied/sqlitedict.sqlite')
-        self.db = sqlitedict.SqliteDict(filename=self.fname)
+        self.db = SqliteDict(filename=self.fname)
         os.chmod(self.fname, 0o000)
         os.chmod(os.path.dirname(self.fname), 0o000)
 
@@ -221,7 +222,7 @@ class SqliteDictTerminateFailTest(unittest.TestCase):
 class SqliteDictJsonSerializationTest(unittest.TestCase):
     def setUp(self):
         self.fname = norm_file('tests/db-json/sqlitedict.sqlite')
-        self.db = sqlitedict.SqliteDict(
+        self.db = SqliteDict(
             filename=self.fname, tablename='test', encode=json.dumps, decode=json.loads
         )
 
@@ -268,14 +269,14 @@ class TablenamesTest(TestCaseBackport):
 
     def test_tablenames(self):
         fname = norm_file('tests/db/tablenames-test-1.sqlite')
-        sqlitedict.SqliteDict(fname)
-        self.assertEqual(sqlitedict.SqliteDict.get_tablenames(fname), ['unnamed'])
+        SqliteDict(fname)
+        self.assertEqual(SqliteDict.get_tablenames(fname), ['unnamed'])
 
         fname = norm_file('tests/db/tablenames-test-2.sqlite')
-        with sqlitedict.SqliteDict(fname,tablename='table1') as db1:   
-            self.assertEqual(sqlitedict.SqliteDict.get_tablenames(fname), ['table1'])
-        with sqlitedict.SqliteDict(fname,tablename='table2') as db2:  
-            self.assertEqual(sqlitedict.SqliteDict.get_tablenames(fname), ['table1','table2'])
+        with SqliteDict(fname,tablename='table1') as db1:
+            self.assertEqual(SqliteDict.get_tablenames(fname), ['table1'])
+        with SqliteDict(fname,tablename='table2') as db2:
+            self.assertEqual(SqliteDict.get_tablenames(fname), ['table1','table2'])
         
-        tablenames = sqlitedict.SqliteDict.get_tablenames('tests/db/tablenames-test-2.sqlite')
+        tablenames = SqliteDict.get_tablenames('tests/db/tablenames-test-2.sqlite')
         self.assertEqual(tablenames, ['table1','table2'])

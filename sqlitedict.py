@@ -292,12 +292,11 @@ class SqliteDict(DictClass):
     def get_tablenames(filename):
         """get the names of the tables in an sqlite db as a list"""
         if not os.path.isfile(filename):
-            raise IOError('file %s does not exist' % (filename))   
-        conn = sqlite3.connect(filename)
+            raise IOError('file %s does not exist' % (filename))
         GET_TABLENAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
-        cursor = conn.execute(GET_TABLENAMES)
-        res = cursor.fetchall()
-        conn.close()
+        with sqlite3.connect(filename) as conn:
+            cursor = conn.execute(GET_TABLENAMES)
+            res = cursor.fetchall()
 
         return [name[0] for name in res]
 
@@ -510,7 +509,7 @@ class SqliteMultithread(Thread):
                 break
             yield rec
 
-    def select_one(self, req, arg=None):    
+    def select_one(self, req, arg=None):
         """Return only the first row of the SELECT, or None if there are no matching rows."""
         try:
             return next(iter(self.select(req, arg)))
