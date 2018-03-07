@@ -33,6 +33,7 @@ import tempfile
 import random
 import logging
 import traceback
+import json
 
 from threading import Thread
 
@@ -213,7 +214,7 @@ class SqliteDict(DictClass):
     def iterkeys(self):
         GET_KEYS = 'SELECT key FROM "%s" ORDER BY rowid' % self.tablename
         for key in self.conn.select(GET_KEYS):
-            yield key[0]
+            yield _unconvertkey(key[0])
 
     def itervalues(self):
         GET_VALUES = 'SELECT value FROM "%s" ORDER BY rowid' % self.tablename
@@ -223,7 +224,7 @@ class SqliteDict(DictClass):
     def iteritems(self):
         GET_ITEMS = 'SELECT key, value FROM "%s" ORDER BY rowid' % self.tablename
         for key, value in self.conn.select(GET_ITEMS):
-            yield key, self.decode(value)
+            yield _unconvertkey(key), self.decode(value)
 
     def keys(self):
         return self.iterkeys() if major_version > 2 else list(self.iterkeys())
@@ -233,12 +234,14 @@ class SqliteDict(DictClass):
 
     def items(self):
         return self.iteritems() if major_version > 2 else list(self.iteritems())
-
+    
     def __contains__(self, key):
+        key = _convertkey(key)
         HAS_ITEM = 'SELECT 1 FROM "%s" WHERE key = ?' % self.tablename
         return self.conn.select_one(HAS_ITEM, (key,)) is not None
 
     def __getitem__(self, key):
+        key = _convertkey(key)
         GET_ITEM = 'SELECT value FROM "%s" WHERE key = ?' % self.tablename
         item = self.conn.select_one(GET_ITEM, (key,))
         if item is None:
@@ -246,6 +249,7 @@ class SqliteDict(DictClass):
         return self.decode(item[0])
 
     def __setitem__(self, key, value):
+        key = _convertkey(key)
         if self.flag == 'r':
             raise RuntimeError('Refusing to write to read-only SqliteDict')
 
@@ -253,11 +257,13 @@ class SqliteDict(DictClass):
         self.conn.execute(ADD_ITEM, (key, self.encode(value)))
 
     def __delitem__(self, key):
+        key0 = key
+        key = _convertkey(key)
         if self.flag == 'r':
             raise RuntimeError('Refusing to delete from read-only SqliteDict')
 
         if key not in self:
-            raise KeyError(key)
+            raise KeyError(key0)
         DEL_ITEM = 'DELETE FROM "%s" WHERE key = ?' % self.tablename
         self.conn.execute(DEL_ITEM, (key,))
 
@@ -355,6 +361,31 @@ class SqliteDict(DictClass):
             # closed after connection lost (exceptions are always ignored
             # in __del__ method.
             pass
+
+def _convertkey(key):
+    if isinstance(key,int):
+        return '___.int.' + repr(key)
+    elif isinstance(key,float):
+        return '___.float.' + repr(key)
+    # These are recursive
+    elif isinstance(key,tuple):
+        return '___.tuple.' + json.dumps([_convertkey(k) for k in key])
+    elif isinstance(key,frozenset):
+        return '___.frozenset.' + json.dumps([_convertkey(k) for k in key])
+    return key
+def _unconvertkey(key):
+    if key.startswith('___.'):
+        _,keytype,newkey = key.split('.',2)
+        if keytype == 'int':
+            return int(newkey)
+        elif keytype == 'float':
+            return float(newkey)
+        elif keytype == 'tuple':
+            return tuple(_unconvertkey(k) for k in json.loads(newkey))
+        elif keytype == 'frozenset':
+            return frozenset(_unconvertkey(k) for k in json.loads(newkey))
+        # Otherwise do nothing and return
+    return key
 
 # Adding extra methods for python 2 compatibility (at import time)
 if major_version == 2:
