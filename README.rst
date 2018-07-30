@@ -81,7 +81,7 @@ The module has no dependencies beyond Python itself. The minimum Python version 
 
 Install or upgrade with::
 
-    pip -U sqlitedict
+    pip install -U sqlitedict
 
 or from the `source tar.gz <http://pypi.python.org/pypi/sqlitedict>`_::
 
