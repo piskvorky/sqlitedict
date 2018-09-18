@@ -1,5 +1,11 @@
 Changes
 =======
+1.6.0, 18/09/2018
+* Add Add `get_tablenames` method (@transfluxus, #72)
+* Add license files to dist (@toddrme2178, #79)
+* Replace `easy_install` -> `pip` in README (@thechief389, #77)
+* Update build badge (@menshikh-iv)
+
 1.5.0, 13/02/2017
 * Add encode and decode parameters to store json, compressed or pickled objects (@erosennin, #65)
 * Python 3.6 fix: commit before turning off synchronous (@bit, #59)
