@@ -371,7 +371,7 @@ def _convertkey(key):
     elif isinstance(key,tuple):
         return '___.tuple.' + json.dumps([_convertkey(k) for k in key])
     elif isinstance(key,frozenset):
-        return '___.frozenset.' + json.dumps([_convertkey(k) for k in key])
+        return '___.frozenset.' + json.dumps(sorted(_convertkey(k) for k in key))
     return key
 def _unconvertkey(key):
     if key.startswith('___.'):
