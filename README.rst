@@ -5,7 +5,7 @@ sqlitedict -- persistent ``dict``, backed-up by SQLite and pickle
 |Travis|_
 |License|_
 
-.. |Travis| image:: https://img.shields.io/travis/RaRe-Technologies/sqlitedict.svg
+.. |Travis| image:: https://travis-ci.org/RaRe-Technologies/sqlitedict.svg?branch=master
 .. |Downloads| image:: https://img.shields.io/pypi/dm/sqlitedict.svg
 .. |License| image:: https://img.shields.io/pypi/l/sqlitedict.svg
 .. _Travis: https://travis-ci.org/RaRe-Technologies/sqlitedict
@@ -81,7 +81,7 @@ The module has no dependencies beyond Python itself. The minimum Python version 
 
 Install or upgrade with::
 
-    easy_install -U sqlitedict
+    pip install -U sqlitedict
 
 or from the `source tar.gz <http://pypi.python.org/pypi/sqlitedict>`_::
 
