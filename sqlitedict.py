@@ -63,6 +63,7 @@ if major_version < 3:  # py <= 2.x
     exec_("def reraise(tp, value, tb=None):\n"
           "    raise tp, value, tb\n")
 else:
+    unicode = str
     def reraise(tp, value, tb=None):
         if value is None:
             value = tp()
@@ -104,12 +105,13 @@ def decode(obj):
     """Deserialize objects retrieved from SQLite."""
     return loads(bytes(obj))
 
-
 class SqliteDict(DictClass):
     VALID_FLAGS = ['c', 'r', 'w', 'n']
 
     def __init__(self, filename=None, tablename='unnamed', flag='c',
-                 autocommit=False, journal_mode="DELETE", encode=encode, decode=decode):
+                 autocommit=False, journal_mode="DELETE", 
+                 encode=encode, decode=decode,
+                 _parent=None,_subtable=None):
         """
         Initialize a thread-safe sqlite-backed dictionary. The dictionary will
         be a table `tablename` in database file `filename`. A single file (=database)
@@ -141,6 +143,24 @@ class SqliteDict(DictClass):
         The default is to use pickle.
 
         """
+        # Handle if it has a parent and skip the rest
+        self._parent = _parent
+        self._subtable = _subtable
+        if self._parent is not None:
+            if self._subtable:
+                self.tablename = self._subtable
+            else:
+                self.tablename = _parent.tablename + '_' + hex(random.randint(0, 0xffffff))[2:]
+            
+            for attr in ['filename','autocommit','journal_mode',
+                         '_encode','_decode','conn','flag']:
+                setattr(self,attr,getattr(_parent,attr))
+            logger.info("opening Sqlite table %r in %s" % (tablename, filename))
+            MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
+            self._parent.commit()
+            self.conn.execute(MAKE_TABLE)
+            return
+        
         self.in_temp = filename is None
         if self.in_temp:
             randpart = hex(random.randint(0, 0xffffff))[2:]
@@ -165,8 +185,8 @@ class SqliteDict(DictClass):
         self.tablename = tablename
         self.autocommit = autocommit
         self.journal_mode = journal_mode
-        self.encode = encode
-        self.decode = decode
+        self._encode = encode
+        self._decode = decode
 
         logger.info("opening Sqlite table %r in %s" % (tablename, filename))
         MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
@@ -250,14 +270,21 @@ class SqliteDict(DictClass):
             raise RuntimeError('Refusing to write to read-only SqliteDict')
 
         ADD_ITEM = 'REPLACE INTO "%s" (key, value) VALUES (?,?)' % self.tablename
-        self.conn.execute(ADD_ITEM, (key, self.encode(value)))
-
+        val = self.encode(value)
+        self.conn.execute(ADD_ITEM, (key, val))
+        print(val)
     def __delitem__(self, key):
         if self.flag == 'r':
             raise RuntimeError('Refusing to delete from read-only SqliteDict')
 
         if key not in self:
             raise KeyError(key)
+        
+        # Handle if subdict
+        obj = self[key]
+        if isinstance(obj,SqliteDict) and obj._parent is not None:
+            obj.clear()
+        
         DEL_ITEM = 'DELETE FROM "%s" WHERE key = ?' % self.tablename
         self.conn.execute(DEL_ITEM, (key,))
 
@@ -355,6 +382,29 @@ class SqliteDict(DictClass):
             # closed after connection lost (exceptions are always ignored
             # in __del__ method.
             pass
+            
+    def encode(self,obj):
+        if isinstance(obj,SqliteDict) and obj._parent is not None:
+            # Just store a reference to the tablename
+            obj = '__nested:' + obj.tablename
+            print('a')
+        return self._encode(obj)
+    
+    def decode(self,obj):
+        obj = self._decode(obj)
+        if not (isinstance(obj,(str,unicode)) and obj.startswith('__nested:')):
+            return obj
+        _subtable = obj[len('__nested:'):]
+        return self.subdict(_subtable=_subtable)
+    
+    def subdict(self,_subtable=None):
+        """
+        Return a dictionary that is *also* a SqliteDict
+        """
+        # Note that all other attributed are automatically taken from
+        # the parent so no need to enumerate them here
+        return SqliteDict(_parent=self,_subtable=_subtable)
+        
 
 # Adding extra methods for python 2 compatibility (at import time)
 if major_version == 2:
