@@ -272,7 +272,7 @@ class SqliteDict(DictClass):
         ADD_ITEM = 'REPLACE INTO "%s" (key, value) VALUES (?,?)' % self.tablename
         val = self.encode(value)
         self.conn.execute(ADD_ITEM, (key, val))
-        print(val)
+        
     def __delitem__(self, key):
         if self.flag == 'r':
             raise RuntimeError('Refusing to delete from read-only SqliteDict')
@@ -283,8 +283,9 @@ class SqliteDict(DictClass):
         # Handle if subdict
         obj = self[key]
         if isinstance(obj,SqliteDict) and obj._parent is not None:
-            obj.clear()
-        
+            DEL_TAB = 'DROP TABLE "%s"' % obj.tablename
+            self.conn.execute(DEL_TAB, tuple())
+            
         DEL_ITEM = 'DELETE FROM "%s" WHERE key = ?' % self.tablename
         self.conn.execute(DEL_ITEM, (key,))
 
@@ -374,6 +375,10 @@ class SqliteDict(DictClass):
             logger.exception("failed to delete %s" % (self.filename))
 
     def __del__(self):
+        # Not sure why but when creating a subdict, it tries to close itself
+        # so ignore subdicts
+        if self._parent is not None:
+            return
         # like close(), but assume globals are gone by now (do not log!)
         try:
             self.close(do_log=False, force=True)
@@ -387,7 +392,6 @@ class SqliteDict(DictClass):
         if isinstance(obj,SqliteDict) and obj._parent is not None:
             # Just store a reference to the tablename
             obj = '__nested:' + obj.tablename
-            print('a')
         return self._encode(obj)
     
     def decode(self,obj):
@@ -411,7 +415,6 @@ if major_version == 2:
     SqliteDict.__nonzero__ = SqliteDict.__bool__
     del SqliteDict.__bool__  # not needed and confusing
 #endclass SqliteDict
-
 
 class SqliteMultithread(Thread):
     """
