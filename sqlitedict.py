@@ -251,6 +251,8 @@ class SqliteDict(DictClass):
 
         ADD_ITEM = 'REPLACE INTO "%s" (key, value) VALUES (?,?)' % self.tablename
         self.conn.execute(ADD_ITEM, (key, self.encode(value)))
+        if self.autocommit:
+            self.commit()
 
     def __delitem__(self, key):
         if self.flag == 'r':
@@ -260,6 +262,8 @@ class SqliteDict(DictClass):
             raise KeyError(key)
         DEL_ITEM = 'DELETE FROM "%s" WHERE key = ?' % self.tablename
         self.conn.execute(DEL_ITEM, (key,))
+        if self.autocommit:
+            self.commit()
 
     def update(self, items=(), **kwds):
         if self.flag == 'r':
@@ -275,6 +279,8 @@ class SqliteDict(DictClass):
         self.conn.executemany(UPDATE_ITEMS, items)
         if kwds:
             self.update(kwds)
+        if self.autocommit:
+            self.commit()
 
     def __iter__(self):
         return self.iterkeys()
