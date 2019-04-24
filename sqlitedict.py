@@ -109,7 +109,8 @@ class SqliteDict(DictClass):
     VALID_FLAGS = ['c', 'r', 'w', 'n']
 
     def __init__(self, filename=None, tablename='unnamed', flag='c',
-                 autocommit=False, journal_mode="DELETE", encode=encode, decode=decode):
+                 autocommit=False, journal_mode="DELETE", encode=encode, decode=decode,
+                 outer_stack=True):
         """
         Initialize a thread-safe sqlite-backed dictionary. The dictionary will
         be a table `tablename` in database file `filename`. A single file (=database)
@@ -140,6 +141,8 @@ class SqliteDict(DictClass):
         object.
         The default is to use pickle.
 
+        If you disable `outer_stack`, the stacktrace at insert time won't be saved. This
+        will make the inserts faster but debugging will be much harder.
         """
         self.in_temp = filename is None
         if self.in_temp:
@@ -167,6 +170,7 @@ class SqliteDict(DictClass):
         self.journal_mode = journal_mode
         self.encode = encode
         self.decode = decode
+        self.outer_stack = outer_stack
 
         logger.info("opening Sqlite table %r in %s" % (tablename, filename))
         MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
@@ -177,7 +181,8 @@ class SqliteDict(DictClass):
             self.clear()
 
     def _new_conn(self):
-        return SqliteMultithread(self.filename, autocommit=self.autocommit, journal_mode=self.journal_mode)
+        return SqliteMultithread(self.filename, autocommit=self.autocommit, journal_mode=self.journal_mode,
+                                 outer_stack=self.outer_stack)
 
     def __enter__(self):
         if not hasattr(self, 'conn') or self.conn is None:
@@ -371,11 +376,12 @@ class SqliteMultithread(Thread):
     in a separate thread (in the same order they arrived).
 
     """
-    def __init__(self, filename, autocommit, journal_mode):
+    def __init__(self, filename, autocommit, journal_mode, outer_stack):
         super(SqliteMultithread, self).__init__()
         self.filename = filename
         self.autocommit = autocommit
         self.journal_mode = journal_mode
+        self.outer_stack = outer_stack
         # use request queue of unlimited size
         self.reqs = Queue()
         self.setDaemon(True)  # python2.5-compatible
@@ -429,10 +435,13 @@ class SqliteMultithread(Thread):
                         self.log.error(item)
 
                     self.log.error('')  # exception & outer stack w/blank line
-                    self.log.error('Outer stack:')
-                    for item in traceback.format_list(outer_stack):
-                        self.log.error(item)
-                    self.log.error('Exception will be re-raised at next call.')
+                    if not self.outer_stack:
+                        self.log.error('No outer stack to display. Enable it using outer_stack=True')
+                    else:
+                        self.log.error('Outer stack:')
+                        for item in traceback.format_list(outer_stack):
+                            self.log.error(item)
+                        self.log.error('Exception will be re-raised at next call.')
 
                 if res:
                     for rec in cursor:
@@ -480,11 +489,9 @@ class SqliteMultithread(Thread):
         """
         self.check_raise_error()
 
-        # NOTE: This might be a lot of information to pump into an input
-        # queue, affecting performance.  I've also seen earlier versions of
-        # jython take a severe performance impact for throwing exceptions
-        # so often.
-        stack = traceback.extract_stack()[:-1]
+        stack = None
+        if self.outer_stack:
+            stack = traceback.extract_stack()[:-1]
         self.reqs.put((req, arg or tuple(), res, stack))
 
     def executemany(self, req, items):
