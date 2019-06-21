@@ -170,9 +170,12 @@ class SqliteDict(DictClass):
 
         logger.info("opening Sqlite table %r in %s" % (tablename, filename))
         MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
-        self.conn = self._new_conn()
-        self.conn.execute(MAKE_TABLE)
-        self.conn.commit()
+        try:
+            self.conn = self._new_conn()
+            self.conn.execute(MAKE_TABLE)
+            self.conn.commit()
+        except sqlite3.OperationalError as e:
+            raise RuntimeError(str(e))
         if flag == 'w':
             self.clear()
 
@@ -381,20 +384,14 @@ class SqliteMultithread(Thread):
         self.setDaemon(True)  # python2.5-compatible
         self.exception = None
         self.log = logging.getLogger('sqlitedict.SqliteMultithread')
+        self.connect()
         self.start()
 
     def run(self):
-        if self.autocommit:
-            conn = sqlite3.connect(self.filename, isolation_level=None, check_same_thread=False)
-        else:
-            conn = sqlite3.connect(self.filename, check_same_thread=False)
-        conn.execute('PRAGMA journal_mode = %s' % self.journal_mode)
-        conn.text_factory = str
-        cursor = conn.cursor()
-        conn.commit()
-        cursor.execute('PRAGMA synchronous=OFF')
 
         res = None
+        conn = None
+        cursor = None
         while True:
             req, arg, res, outer_stack = self.reqs.get()
             if req == '--close--':
@@ -404,35 +401,25 @@ class SqliteMultithread(Thread):
                 conn.commit()
                 if res:
                     res.put('--no more--')
+            elif req == '--connect--':
+                try:
+                    if self.autocommit:
+                        conn = sqlite3.connect(self.filename, isolation_level=None, check_same_thread=False)
+                    else:
+                        conn = sqlite3.connect(self.filename, check_same_thread=False)
+                except Exception as err:
+                    self.store_error(outer_stack, err)
+                else:
+                    conn.execute('PRAGMA journal_mode = %s' % self.journal_mode)
+                    conn.text_factory = str
+                    cursor = conn.cursor()
+                    conn.commit()
+                    cursor.execute('PRAGMA synchronous=OFF')
             else:
                 try:
                     cursor.execute(req, arg)
                 except Exception as err:
-                    self.exception = (e_type, e_value, e_tb) = sys.exc_info()
-                    inner_stack = traceback.extract_stack()
-
-                    # An exception occurred in our thread, but we may not
-                    # immediately able to throw it in our calling thread, if it has
-                    # no return `res` queue: log as level ERROR both the inner and
-                    # outer exception immediately.
-                    #
-                    # Any iteration of res.get() or any next call will detect the
-                    # inner exception and re-raise it in the calling Thread; though
-                    # it may be confusing to see an exception for an unrelated
-                    # statement, an ERROR log statement from the 'sqlitedict.*'
-                    # namespace contains the original outer stack location.
-                    self.log.error('Inner exception:')
-                    for item in traceback.format_list(inner_stack):
-                        self.log.error(item)
-                    self.log.error('')  # deliniate traceback & exception w/blank line
-                    for item in traceback.format_exception_only(e_type, e_value):
-                        self.log.error(item)
-
-                    self.log.error('')  # exception & outer stack w/blank line
-                    self.log.error('Outer stack:')
-                    for item in traceback.format_list(outer_stack):
-                        self.log.error(item)
-                    self.log.error('Exception will be re-raised at next call.')
+                    self.store_error(outer_stack, err)
 
                 if res:
                     for rec in cursor:
@@ -443,8 +430,37 @@ class SqliteMultithread(Thread):
                     conn.commit()
 
         self.log.debug('received: %s, send: --no more--', req)
-        conn.close()
+        if conn is not None:
+            conn.close()
         res.put('--no more--')
+
+    def store_error(self, outer_stack, err):
+        """ Store error to be raised in any next call """
+        self.exception = (e_type, e_value, e_tb) = sys.exc_info()
+        inner_stack = traceback.extract_stack()
+
+        # An exception occurred in our thread, but we may not
+        # immediately able to throw it in our calling thread, if it has
+        # no return `res` queue: log as level ERROR both the inner and
+        # outer exception immediately.
+        #
+        # Any iteration of res.get() or any next call will detect the
+        # inner exception and re-raise it in the calling Thread; though
+        # it may be confusing to see an exception for an unrelated
+        # statement, an ERROR log statement from the 'sqlitedict.*'
+        # namespace contains the original outer stack location.
+        self.log.error('Inner exception:')
+        for item in traceback.format_list(inner_stack):
+            self.log.error(item)
+        self.log.error('')  # deliniate traceback & exception w/blank line
+        for item in traceback.format_exception_only(e_type, e_value):
+            self.log.error(item)
+
+        self.log.error('')  # exception & outer stack w/blank line
+        self.log.error('Outer stack:')
+        for item in traceback.format_list(outer_stack):
+            self.log.error(item)
+        self.log.error('Exception will be re-raised at next call.')
 
     def check_raise_error(self):
         """
@@ -526,6 +542,9 @@ class SqliteMultithread(Thread):
         else:
             # otherwise, we fire and forget as usual.
             self.execute('--commit--')
+
+    def connect(self):
+        self.execute('--connect--')
 
     def close(self, force=False):
         if force:
