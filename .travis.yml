@@ -8,6 +8,9 @@ python:
   - "3.7"
   - "3.6"
 install:
+  - pip install flake8
   - python setup.py install
   - python -c "import sqlite3 as sqlite; print(sqlite.sqlite_version)"
-script: make test-all
+script:
+  - flake8 sqldict
+  - make test-all

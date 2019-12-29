@@ -1,11 +1,5 @@
-# std import
-import tempfile
-import unittest
-
-# local
 import sqlitedict
 from test_temp_db import TempSqliteDictTest
-from test_core import TestCaseBackport
 from accessories import norm_file
 
 
@@ -45,7 +39,6 @@ class StartsWithEmptySqliteDictTest(TempSqliteDictTest):
         self.d.terminate()
 
 
-
 class SqliteDictAutocommitTest(TempSqliteDictTest):
 
     def setUp(self):
@@ -54,4 +47,3 @@ class SqliteDictAutocommitTest(TempSqliteDictTest):
 
     def tearDown(self):
         self.d.terminate()
-
