@@ -59,6 +59,16 @@ class SqliteMiscTest(TestCaseBackport):
         with self.assertRaises(RuntimeError):
             SqliteDict(filename=os.path.join(folder, 'nonexistent'))
 
+    def test_failed_connection(self):
+        """ Verify error when connecting does not deadlock """
+        # given: a non-existent directory,
+        folder = tempfile.mkdtemp(prefix='sqlitedict-test')
+        # os.rmdir(folder)
+        # exercise,
+        with self.assertRaises(RuntimeError):
+            SqliteDict(filename=folder)
+        os.rmdir(folder)
+
     def test_commit_nonblocking(self):
         """Coverage for non-blocking commit."""
         # given,
@@ -133,8 +143,8 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
         def attempt_terminate():
             readonly_db.terminate()
 
-        attempt_funcs = [attempt_write, 
-                         attempt_update, 
+        attempt_funcs = [attempt_write,
+                         attempt_update,
                          attempt_delete,
                          attempt_clear,
                          attempt_terminate]
@@ -159,7 +169,7 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
 
         with self.assertRaisesRegexp(ValueError, r'^Invalid tablename '):
             SqliteDict(':memory:', '"')
- 
+
     def test_overwrite_using_flag_w(self):
         """Re-opening of a database with flag='w' destroys only the target table."""
         # given,
@@ -277,6 +287,6 @@ class TablenamesTest(TestCaseBackport):
             self.assertEqual(SqliteDict.get_tablenames(fname), ['table1'])
         with SqliteDict(fname,tablename='table2') as db2:
             self.assertEqual(SqliteDict.get_tablenames(fname), ['table1','table2'])
-        
+
         tablenames = SqliteDict.get_tablenames('tests/db/tablenames-test-2.sqlite')
         self.assertEqual(tablenames, ['table1','table2'])
