@@ -67,6 +67,25 @@ class SqliteMiscTest(TestCaseBackport):
             d['key'] = 'value'
             d.commit(blocking=False)
 
+    def test_special_keys(self):
+        """integer, float and/or tuple keys"""
+        db = SqliteDict()
+        db['1'] = 1
+        db[1] = 'ONE'
+        db[('a',1)] = 'testtuple'
+        db[frozenset([1,2,'2'])] = 'testfrozenset'
+        assert db[1] == 'ONE'
+        assert db['1'] == 1
+        assert db[('a',1)] == 'testtuple'
+        assert db[frozenset([1,2,'2'])] == 'testfrozenset'
+
+        # This tests the reverse conversion
+        keys = list(db.keys()) 
+        assert len(keys) == 4
+        assert '1' in keys
+        assert 1 in keys
+        assert ('a',1) in keys
+        assert frozenset([1,2,'2']) in keys
 
 class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
     """Verify default flag='c', and flag='n' of SqliteDict()."""
