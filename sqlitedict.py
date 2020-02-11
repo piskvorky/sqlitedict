@@ -30,7 +30,6 @@ import sqlite3
 import os
 import sys
 import tempfile
-import random
 import logging
 import traceback
 
@@ -38,7 +37,7 @@ from threading import Thread
 
 try:
     __version__ = __import__('pkg_resources').get_distribution('sqlitedict').version
-except:
+except Exception:
     __version__ = '?'
 
 major_version = sys.version_info[0]
@@ -143,8 +142,8 @@ class SqliteDict(DictClass):
         """
         self.in_temp = filename is None
         if self.in_temp:
-            randpart = hex(random.randint(0, 0xffffff))[2:]
-            filename = os.path.join(tempfile.gettempdir(), 'sqldict' + randpart)
+            fd, filename = tempfile.mkstemp(prefix='sqldict')
+            os.close(fd)
 
         if flag not in SqliteDict.VALID_FLAGS:
             raise RuntimeError("Unrecognized flag: %s" % flag)
@@ -332,7 +331,7 @@ class SqliteDict(DictClass):
         if self.in_temp:
             try:
                 os.remove(self.filename)
-            except:
+            except Exception:
                 pass
 
     def terminate(self):
@@ -413,7 +412,7 @@ class SqliteMultithread(Thread):
             else:
                 try:
                     cursor.execute(req, arg)
-                except Exception as err:
+                except Exception:
                     self.exception = (e_type, e_value, e_tb) = sys.exc_info()
                     inner_stack = traceback.extract_stack()
 
