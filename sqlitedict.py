@@ -161,8 +161,9 @@ class SqliteDict(DictClass):
 
         self.filename = filename
         if '"' in tablename:
-            raise ValueError('Invalid tablename %r' % tablename)
-        self.tablename = tablename
+            self.tablename = tablename.replace('"', '""')
+        else:
+            self.tablename = tablename
         self.autocommit = autocommit
         self.journal_mode = journal_mode
         self.encode = encode

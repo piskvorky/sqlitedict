@@ -145,21 +145,17 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
 
     def test_irregular_tablenames(self):
         """Irregular table names need to be quoted"""
-        db = SqliteDict(':memory:', tablename='9nine')
-        db['key'] = 'value'
-        db.commit()
-        self.assertEqual(db['key'], 'value')
-        db.close()
+        def __test_irregular_tablenames(tablename):
+            db = SqliteDict(':memory:', tablename=tablename)
+            db['key'] = 'value'
+            db.commit()
+            self.assertEqual(db['key'], 'value')
+            db.close()
 
-        db = SqliteDict(':memory:', tablename='outer space')
-        db['key'] = 'value'
-        db.commit()
-        self.assertEqual(db['key'], 'value')
-        db.close()
+        __test_irregular_tablenames('9nine')
+        __test_irregular_tablenames('outer space')
+        __test_irregular_tablenames('table with a "quoted" name')
 
-        with self.assertRaisesRegexp(ValueError, r'^Invalid tablename '):
-            SqliteDict(':memory:', '"')
- 
     def test_overwrite_using_flag_w(self):
         """Re-opening of a database with flag='w' destroys only the target table."""
         # given,
