@@ -160,16 +160,13 @@ class SqliteDict(DictClass):
                 raise RuntimeError('Error! The directory does not exist, %s' % dirname)
 
         self.filename = filename
-        if '"' in tablename:
-            self.tablename = tablename.replace('"', '""')
-        else:
-            self.tablename = tablename
+        self.tablename = tablename.replace('"', '""')
         self.autocommit = autocommit
         self.journal_mode = journal_mode
         self.encode = encode
         self.decode = decode
 
-        logger.info("opening Sqlite table %r in %s" % (tablename, filename))
+        logger.info("opening Sqlite table %r in %r" % (tablename, filename))
         MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
         self.conn = self._new_conn()
         self.conn.execute(MAKE_TABLE)
