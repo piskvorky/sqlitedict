@@ -275,4 +275,4 @@ class TablenamesTest(TestCaseBackport):
             self.assertEqual(SqliteDict.get_tablenames(fname), ['table1','table2'])
         
         tablenames = SqliteDict.get_tablenames('tests/db/tablenames-test-2.sqlite')
-        self.assertEqual(tablenames, ['table1','table2'])
+        self.assertEqual(tablenames, ['table1', 'table2'])
