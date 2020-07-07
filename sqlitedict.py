@@ -161,7 +161,8 @@ class SqliteDict(DictClass):
 
         self.filename = filename
 
-        # standard SQL quoting of double quotes in didentifiers
+        # standard SQL quoting of double quotes in identifiers
+        # ticket https://github.com/RaRe-Technologies/sqlitedict/pull/113
         # for more info look at the standard @
         # https://ronsavage.github.io/SQL/sql-2003-2.bnf.html#doublequote%20symbol
         self.tablename = tablename.replace('"', '""')
