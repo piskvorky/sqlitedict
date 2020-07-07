@@ -160,7 +160,12 @@ class SqliteDict(DictClass):
                 raise RuntimeError('Error! The directory does not exist, %s' % dirname)
 
         self.filename = filename
+
+        # standard SQL quoting of double quotes in didentifiers
+        # for more info look at the standard @
+        # https://ronsavage.github.io/SQL/sql-2003-2.bnf.html#doublequote%20symbol
         self.tablename = tablename.replace('"', '""')
+
         self.autocommit = autocommit
         self.journal_mode = journal_mode
         self.encode = encode
