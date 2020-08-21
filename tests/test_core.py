@@ -145,21 +145,19 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
 
     def test_irregular_tablenames(self):
         """Irregular table names need to be quoted"""
-        db = SqliteDict(':memory:', tablename='9nine')
-        db['key'] = 'value'
-        db.commit()
-        self.assertEqual(db['key'], 'value')
-        db.close()
+        def __test_irregular_tablenames(tablename):
+            filename = ':memory:'
+            db = SqliteDict(filename, tablename=tablename)
+            db['key'] = 'value'
+            db.commit()
+            self.assertEqual(db['key'], 'value')
+            db.close()
 
-        db = SqliteDict(':memory:', tablename='outer space')
-        db['key'] = 'value'
-        db.commit()
-        self.assertEqual(db['key'], 'value')
-        db.close()
+        __test_irregular_tablenames('9nine')
+        __test_irregular_tablenames('outer space')
+        __test_irregular_tablenames('table with a "quoted" name')
+        __test_irregular_tablenames("table with a \"quoted \xe1cute\" name")
 
-        with self.assertRaisesRegexp(ValueError, r'^Invalid tablename '):
-            SqliteDict(':memory:', '"')
- 
     def test_overwrite_using_flag_w(self):
         """Re-opening of a database with flag='w' destroys only the target table."""
         # given,
@@ -279,4 +277,4 @@ class TablenamesTest(TestCaseBackport):
             self.assertEqual(SqliteDict.get_tablenames(fname), ['table1','table2'])
         
         tablenames = SqliteDict.get_tablenames('tests/db/tablenames-test-2.sqlite')
-        self.assertEqual(tablenames, ['table1','table2'])
+        self.assertEqual(tablenames, ['table1', 'table2'])

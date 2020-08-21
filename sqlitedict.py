@@ -160,15 +160,17 @@ class SqliteDict(DictClass):
                 raise RuntimeError('Error! The directory does not exist, %s' % dirname)
 
         self.filename = filename
-        if '"' in tablename:
-            raise ValueError('Invalid tablename %r' % tablename)
-        self.tablename = tablename
+
+        # Use standard SQL escaping of double quote characters in identifiers, by doubling them.
+        # See https://github.com/RaRe-Technologies/sqlitedict/pull/113
+        self.tablename = tablename.replace('"', '""')
+
         self.autocommit = autocommit
         self.journal_mode = journal_mode
         self.encode = encode
         self.decode = decode
 
-        logger.info("opening Sqlite table %r in %s" % (tablename, filename))
+        logger.info("opening Sqlite table %r in %r" % (tablename, filename))
         MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
         self.conn = self._new_conn()
         self.conn.execute(MAKE_TABLE)
