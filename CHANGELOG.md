@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.7.0, 04/09/2018
+
 * Add a blocking commit after each modification if autocommit is enabled. (PR [#94](https://github.com/RaRe-Technologies/sqlitedict/pull/94), [@endlisnis](https://github.com/endlisnis))
 * Clean up license file names (PR [#99](https://github.com/RaRe-Technologies/sqlitedict/pull/99), [@r-barnes](https://github.com/r-barnes))
 * support double quotes in table names (PR [#113](https://github.com/RaRe-Technologies/sqlitedict/pull/113), [@vcalv](https://github.com/vcalv))

@@ -36,10 +36,7 @@ import traceback
 
 from threading import Thread
 
-try:
-    __version__ = __import__('pkg_resources').get_distribution('sqlitedict').version
-except:
-    __version__ = '?'
+__version__ = '1.7.0'
 
 major_version = sys.version_info[0]
 if major_version < 3:  # py <= 2.x
