@@ -104,21 +104,21 @@ By default Pickle is used internally to (de)serialize the values.
 
 It's possible to use a custom (de)serializer, notably for JSON and for compression.
 
-  .. code-block:: python
+.. code-block:: python
 
-      # use JSON instead of pickle
-      import json
-      mydict = SqliteDict("./my_db.sqlite", encode=json.dumps, decode=json.loads)
+    # use JSON instead of pickle
+    import json
+    mydict = SqliteDict("./my_db.sqlite", encode=json.dumps, decode=json.loads)
 
-      # apply zlib compression after pickling
-      import zlib, pickle, sqlite3
+    # apply zlib compression after pickling
+    import zlib, pickle, sqlite3
 
-      def my_encode(obj):
-          return sqlite3.Binary(zlib.compress(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)))
-      def my_decode(obj):
-          return pickle.loads(zlib.decompress(bytes(obj)))
+    def my_encode(obj):
+        return sqlite3.Binary(zlib.compress(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)))
+    def my_decode(obj):
+        return pickle.loads(zlib.decompress(bytes(obj)))
 
-      mydict = SqliteDict("./my_db.sqlite", encode=my_encode, decode=my_decode)
+    mydict = SqliteDict("./my_db.sqlite", encode=my_encode, decode=my_decode)
 
 More
 ----
@@ -157,8 +157,8 @@ Performance
 
 * sqlite is efficient and can work effectively with large databases (multi gigabytes), not limited by memory.
 * sqlitedict is mostly a thin wrapper around sqlite, conserving efficiency.
-* items() keys() values() are iterating one by one, len() is calling sqlite to count rows.
-* For better performance, write objects in batch and commit() once.
+* ``items()`` ``keys()`` ``values()`` are iterating one by one, ``len()`` is calling sqlite to count rows.
+* For better performance, write objects in batch and ``commit()`` once.
 * When using pickle, make sure cPickle is installed (pip install cPickle).
 
 Installation
