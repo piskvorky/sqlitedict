@@ -1,6 +1,6 @@
-=================================================================
-sqlitedict -- persistent ``dict``, backed-up by SQLite and pickle
-=================================================================
+======================================================================
+sqlitedict -- persistent ``dict``, backed-up by SQLite and pickle/json
+======================================================================
 
 |Travis|_
 |License|_
@@ -15,38 +15,131 @@ sqlitedict -- persistent ``dict``, backed-up by SQLite and pickle
 A lightweight wrapper around Python's sqlite3 database with a simple, Pythonic
 dict-like interface and support for multi-thread access:
 
-.. code-block:: python
+Usage
+=====
 
-  >>> from sqlitedict import SqliteDict
-  >>> mydict = SqliteDict('./my_db.sqlite', autocommit=True)
-  >>> mydict['some_key'] = any_picklable_object
-  >>> print mydict['some_key']  # prints the new value
-  >>> for key, value in mydict.iteritems():
-  >>>     print key, value
-  >>> print len(mydict) # etc... all dict functions work
-  >>> mydict.close()
-
-Pickle is used internally to (de)serialize the values. Keys are arbitrary strings,
-values arbitrary pickle-able objects.
-
-If you don't use autocommit (default is no autocommit for performance), then
-don't forget to call ``mydict.commit()`` when done with a transaction:
+Write
+-----
 
 .. code-block:: python
 
-  >>> # using SqliteDict as context manager works too (RECOMMENDED)
-  >>> with SqliteDict('./my_db.sqlite') as mydict:  # note no autocommit=True
-  ...     mydict['some_key'] = u"first value"
-  ...     mydict['another_key'] = range(10)
-  ...     mydict.commit()
-  ...     mydict['some_key'] = u"new value"
-  ...     # no explicit commit here
-  >>> with SqliteDict('./my_db.sqlite') as mydict:  # re-open the same DB
-  ...     print mydict['some_key']  # outputs 'first value', not 'new value'
+    from sqlitedict import SqliteDict
+    db = SqliteDict("./db.sqlite")
 
+    db["1"] = {"name": "first item"}
+    db["2"] = {"name": "second item"}
+    db["3"] = {"name": "yet another item"}
+
+    # commit to save the objects.
+    db.commit()
+
+    db["4"] = {"name": "yet another item"}
+    # oops, forgot to commit here, that object will never be saved.
+
+    # always remember to commit, or enable autocommit with SqliteDict("./db.sqlite", autocommit=True)
+    # autocommit is off by default for performance.
+
+Read
+----
+
+.. code-block:: python
+
+    from sqlitedict import SqliteDict
+    db = SqliteDict("./db.sqlite")
+
+    print("There are {} items in the database".format(len(db)))
+
+    # standard dict interface. items() values() keys() etc...
+    for key, item in db.items():
+        print("{}={}".format(key, item))
+
+    # note that this is implemented efficiently.
+    # len() is calling sqlite to count items, it doesn't load objects in memory.
+    # in() is iterating on the objects one by one.
+
+Context Manager
+---------------
+
+.. code-block:: python
+
+    from sqlitedict import SqliteDict
+
+    # the database is automatically closed when leaving the with section.
+    # uncommited objects are not saved on close. REMEMBER TO COMMIT!
+
+    with SqliteDict("./db.sqlite") as db:
+        print("There are {} items in the database".format(len(db)))
+
+
+Tables
+------
+
+A default table is used when no table name is specified.
+
+.. code-block:: python
+
+    from sqlitedict import SqliteDict
+
+    # support for multiple tables in the same files.
+    # writes are serialized. consider splitting large databases (> 1 GB) for performance.
+    products      =  SqliteDict("./db.sqlite", tablename="product", autocommit=True)
+    manufacturers =  SqliteDict("./db.sqlite", tablename="manufacturer", autocommit=True)
+
+    products["1"] = {"name": "first item",  "manufacturer_id": "1"}
+    products["2"] = {"name": "second item", "manufacturer_id": "1"}
+
+    manufacturers["1"] = {"manufacturer_name": "afactory",          "location": "US"}
+    manufacturers["2"] = {"manufacturer_name": "anotherfactory",    "location": "UK"}
+
+    tables = products.get_tablenames()
+    print(tables)
+    # ["product", "manufacturer"]
+
+Serialization
+-------------
+
+Keys are strings. Values are any serializeable object.
+
+By default Pickle is used internally to (de)serialize the values.
+
+It's possible to use a custom (de)serializer, notably for JSON and for compression.
+
+  .. code-block:: python
+
+      # use JSON instead of pickle
+      import json
+      mydict = SqliteDict("./my_db.sqlite", encode=json.dumps, decode=json.loads)
+
+      # apply zlib compression after pickling
+      import zlib, pickle, sqlite3
+
+      def my_encode(obj):
+          return sqlite3.Binary(zlib.compress(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)))
+      def my_decode(obj):
+          return pickle.loads(zlib.decompress(bytes(obj)))
+
+      mydict = SqliteDict("./my_db.sqlite", encode=my_encode, decode=my_decode)
+
+More
+----
+
+Functions are well documented, see docstrings directly in ``sqlitedict.py`` or call ``help(sqlitedict)``.
+
+**Beware**: because of Python semantics, ``sqlitedict`` cannot know when a mutable
+SqliteDict-backed entry was modified in RAM. For example, ``db["123"]["name"] = "hello world"``
+will leave ``mydict["123"]`` object as it was, not changing the name. You'll need to
+explicitly assign the mutated object back to SqliteDict:
+
+.. code-block:: python
+
+    val = db.get("123", {})
+    val["name"] = "hello world" # sqlite DB not updated here!
+    db["123"] = val  # now updated
+
+    db.commit() # remember to commit (or set autocommit)
 
 Features
---------
+========
 
 * Values can be **any picklable objects** (uses ``cPickle`` with the highest protocol).
 * Support for **multiple tables** (=dicts) living in the same database file.
@@ -59,25 +152,20 @@ Features
 
 * Support for **custom serialization or compression**:
 
-  .. code-block:: python
+Performance
+===========
 
-      # use JSON instead of pickle
-      >>> import json
-      >>> mydict = SqliteDict('./my_db.sqlite', encode=json.dumps, decode=json.loads)
-
-      # apply zlib compression after pickling
-      >>> import zlib, pickle, sqlite3
-      >>> def my_encode(obj):
-      ...     return sqlite3.Binary(zlib.compress(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)))
-      >>> def my_decode(obj):
-      ...     return pickle.loads(zlib.decompress(bytes(obj)))
-      >>> mydict = SqliteDict('./my_db.sqlite', encode=my_encode, decode=my_decode)
-
+* sqlite is efficient and can work effectively with large databases (multi gigabytes), not limited by memory.
+* sqlitedict is mostly a thin wrapper around sqlite, conserving efficiency.
+* items() keys() values() are iterating one by one, len() is calling sqlite to count rows.
+* For better performance, write objects in batch and commit() once.
+* When using pickle, make sure cPickle is installed (pip install cPickle).
 
 Installation
-------------
+============
 
-The module has no dependencies beyond Python itself. The minimum Python version is 2.5, continuously tested on Python 2.6, 2.7, 3.3 and 3.4 `on Travis <https://travis-ci.org/RaRe-Technologies/sqlitedict>`_.
+The module has no dependencies beyond Python itself.
+The minimum Python version is 2.6, continuously tested on Python 2.6, 2.7, 3.3, 3.4, 3.5, 3.6 `on Travis <https://travis-ci.org/RaRe-Technologies/sqlitedict>`_.
 
 Install or upgrade with::
 
@@ -87,32 +175,11 @@ or from the `source tar.gz <http://pypi.python.org/pypi/sqlitedict>`_::
 
     python setup.py install
 
-Documentation
--------------
+Contributions
+=============
 
-Standard Python document strings are inside the module:
-
-.. code-block:: python
-
-  >>> import sqlitedict
-  >>> help(sqlitedict)
-
-(but it's just ``dict`` with a commit, really).
-
-**Beware**: because of Python semantics, ``sqlitedict`` cannot know when a mutable
-SqliteDict-backed entry was modified in RAM. For example, ``mydict.setdefault('new_key', []).append(1)``
-will leave ``mydict['new_key']`` equal to empty list, not ``[1]``. You'll need to
-explicitly assign the mutated object back to SqliteDict to achieve the same effect:
-
-.. code-block:: python
-
-  >>> val = mydict.get('new_key', [])
-  >>> val.append(1)  # sqlite DB not updated here!
-  >>> mydict['new_key'] = val  # now updated
-
-
-For developers
---------------
+Testing
+-------
 
 Install::
 
@@ -127,15 +194,14 @@ To perform all tests with coverage::
 
    # make test-all-with-coverage
 
-
 Comments, bug reports
 ---------------------
 
 ``sqlitedict`` resides on `github <https://github.com/RaRe-Technologies/sqlitedict>`_. You can file
 issues or pull requests there.
 
-
-----
+License
+=======
 
 ``sqlitedict`` is open source software released under the `Apache 2.0 license <http://opensource.org/licenses/apache2.0.php>`_.
 Copyright (c) 2011-now `Radim Řehůřek <http://radimrehurek.com>`_ and contributors.
