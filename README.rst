@@ -122,14 +122,13 @@ More
 Functions are well documented, see docstrings directly in ``sqlitedict.py`` or call ``help(sqlitedict)``.
 
 **Beware**: because of Python semantics, ``sqlitedict`` cannot know when a mutable
-SqliteDict-backed entry was modified in RAM. For example, ``db["123"]["name"] = "hello world"``
-will leave ``mydict["123"]`` object as it was, not changing the name. You'll need to
+SqliteDict-backed entry was modified in RAM. You'll need to
 explicitly assign the mutated object back to SqliteDict:
 
 .. code-block:: python
 
-    val = db.get("123", {})
-    val["name"] = "hello world" # sqlite DB not updated here!
+    item = db["123"]
+    item["name"] = "hello world" # sqlite DB not updated here!
     db["123"] = val  # now updated
 
     db.commit() # remember to commit (or set autocommit)
