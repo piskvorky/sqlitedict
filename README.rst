@@ -47,11 +47,11 @@ Read
     from sqlitedict import SqliteDict
     db = SqliteDict("./db.sqlite")
 
-    print("There are {} items in the database".format(len(db)))
+    print("There are %s items in the database" % (len(db)))
 
     # Standard dict interface. items() values() keys() etc...
     for key, item in db.items():
-        print("{}={}".format(key, item))
+        print("%s=%s" % (key, item))
 
 Context Manager
 ---------------
@@ -64,7 +64,7 @@ Context Manager
     # Uncommited objects are not saved on close. REMEMBER TO COMMIT!
 
     with SqliteDict("./db.sqlite") as db:
-        print("There are {} items in the database".format(len(db)))
+        print("There are %s items in the database" % (len(db)))
 
 
 Tables
