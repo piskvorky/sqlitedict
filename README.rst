@@ -70,22 +70,23 @@ Context Manager
 Tables
 ------
 
+A database file can store multiple tables.
 A default table is used when no table name is specified.
+
+Note: Writes are serialized, having multiple tables does not improve performance.
 
 .. code-block:: python
 
     from sqlitedict import SqliteDict
 
-    # Support for multiple tables in the same files.
-    # Writes are serialized. consider splitting large databases (> 1 GB) for performance.
-    products      =  SqliteDict("./db.sqlite", tablename="product", autocommit=True)
-    manufacturers =  SqliteDict("./db.sqlite", tablename="manufacturer", autocommit=True)
+    products = SqliteDict("./db.sqlite", tablename="product", autocommit=True)
+    manufacturers = SqliteDict("./db.sqlite", tablename="manufacturer", autocommit=True)
 
     products["1"] = {"name": "first item",  "manufacturer_id": "1"}
     products["2"] = {"name": "second item", "manufacturer_id": "1"}
 
-    manufacturers["1"] = {"manufacturer_name": "afactory",          "location": "US"}
-    manufacturers["2"] = {"manufacturer_name": "anotherfactory",    "location": "UK"}
+    manufacturers["1"] = {"manufacturer_name": "afactory", "location": "US"}
+    manufacturers["2"] = {"manufacturer_name": "anotherfactory", "location": "UK"}
 
     tables = products.get_tablenames()
     print(tables)
