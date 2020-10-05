@@ -53,10 +53,6 @@ Read
     for key, item in db.items():
         print("{}={}".format(key, item))
 
-    # note that this is implemented efficiently.
-    # len() is calling sqlite to count items, it doesn't load objects in memory.
-    # in() is iterating on the objects one by one.
-
 Context Manager
 ---------------
 
