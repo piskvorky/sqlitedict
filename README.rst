@@ -1,5 +1,5 @@
 ======================================================================
-sqlitedict -- persistent ``dict``, backed-up by SQLite and pickle/json
+sqlitedict -- persistent ``dict``, backed up by SQLite
 ======================================================================
 
 |Travis|_
