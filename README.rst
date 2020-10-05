@@ -30,14 +30,14 @@ Write
     db["2"] = {"name": "second item"}
     db["3"] = {"name": "yet another item"}
 
-    # commit to save the objects.
+    # Commit to save the objects.
     db.commit()
 
     db["4"] = {"name": "yet another item"}
-    # oops, forgot to commit here, that object will never be saved.
+    # Oops, forgot to commit here, that object will never be saved.
 
-    # always remember to commit, or enable autocommit with SqliteDict("./db.sqlite", autocommit=True)
-    # autocommit is off by default for performance.
+    # Always remember to commit, or enable autocommit with SqliteDict("./db.sqlite", autocommit=True)
+    # Autocommit is off by default for performance.
 
 Read
 ----
@@ -49,7 +49,7 @@ Read
 
     print("There are {} items in the database".format(len(db)))
 
-    # standard dict interface. items() values() keys() etc...
+    # Standard dict interface. items() values() keys() etc...
     for key, item in db.items():
         print("{}={}".format(key, item))
 
@@ -60,8 +60,8 @@ Context Manager
 
     from sqlitedict import SqliteDict
 
-    # the database is automatically closed when leaving the with section.
-    # uncommited objects are not saved on close. REMEMBER TO COMMIT!
+    # The database is automatically closed when leaving the with section.
+    # Uncommited objects are not saved on close. REMEMBER TO COMMIT!
 
     with SqliteDict("./db.sqlite") as db:
         print("There are {} items in the database".format(len(db)))
@@ -76,8 +76,8 @@ A default table is used when no table name is specified.
 
     from sqlitedict import SqliteDict
 
-    # support for multiple tables in the same files.
-    # writes are serialized. consider splitting large databases (> 1 GB) for performance.
+    # Support for multiple tables in the same files.
+    # Writes are serialized. consider splitting large databases (> 1 GB) for performance.
     products      =  SqliteDict("./db.sqlite", tablename="product", autocommit=True)
     manufacturers =  SqliteDict("./db.sqlite", tablename="manufacturer", autocommit=True)
 
@@ -102,11 +102,11 @@ It's possible to use a custom (de)serializer, notably for JSON and for compressi
 
 .. code-block:: python
 
-    # use JSON instead of pickle
+    # Use JSON instead of pickle
     import json
     mydict = SqliteDict("./my_db.sqlite", encode=json.dumps, decode=json.loads)
 
-    # apply zlib compression after pickling
+    # Apply zlib compression after pickling
     import zlib, pickle, sqlite3
 
     def my_encode(obj):
