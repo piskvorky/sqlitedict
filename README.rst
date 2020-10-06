@@ -1,6 +1,6 @@
-======================================================================
-sqlitedict -- persistent ``dict``, backed up by SQLite
-======================================================================
+===================================================
+sqlitedict -- persistent ``dict``, backed by SQLite
+===================================================
 
 |Travis|_
 |License|_
@@ -23,49 +23,52 @@ Write
 
 .. code-block:: python
 
-    from sqlitedict import SqliteDict
-    db = SqliteDict("./db.sqlite")
-
-    db["1"] = {"name": "first item"}
-    db["2"] = {"name": "second item"}
-    db["3"] = {"name": "yet another item"}
-
-    # Commit to save the objects.
-    db.commit()
-
-    db["4"] = {"name": "yet another item"}
-    # Oops, forgot to commit here, that object will never be saved.
-
-    # Always remember to commit, or enable autocommit with SqliteDict("./db.sqlite", autocommit=True)
-    # Autocommit is off by default for performance.
+    >>> from sqlitedict import SqliteDict
+    >>> db = SqliteDict("/tmp/db.sqlite")
+    >>>
+    >>> db["1"] = {"name": "first item"}
+    >>> db["2"] = {"name": "second item"}
+    >>> db["3"] = {"name": "yet another item"}
+    >>>
+    >>> # Commit to save the objects.
+    >>> db.commit()
+    >>>
+    >>> db["4"] = {"name": "yet another item"}
+    >>> # Oops, forgot to commit here, that object will never be saved.
+    >>> # Always remember to commit, or enable autocommit with SqliteDict("/tmp/db.sqlite", autocommit=True)
+    >>> # Autocommit is off by default for performance.
 
 Read
 ----
 
 .. code-block:: python
 
-    from sqlitedict import SqliteDict
-    db = SqliteDict("./db.sqlite")
-
-    print("There are %s items in the database" % (len(db)))
-
-    # Standard dict interface. items() values() keys() etc...
-    for key, item in db.items():
-        print("%s=%s" % (key, item))
+    >>> from sqlitedict import SqliteDict
+    >>> db = SqliteDict("/tmp/db.sqlite")
+    >>>
+    >>> print("There are %d items in the database" % len(db))
+    There are 3 items in the database
+    >>>
+    >>> # Standard dict interface. items() values() keys() etc...
+    >>> for key, item in db.items():
+    ...     print("%s=%s" % (key, item))
+    1={'name': 'first item'}
+    2={'name': 'second item'}
+    3={'name': 'yet another item'}
 
 Context Manager
 ---------------
 
 .. code-block:: python
 
-    from sqlitedict import SqliteDict
-
-    # The database is automatically closed when leaving the with section.
-    # Uncommited objects are not saved on close. REMEMBER TO COMMIT!
-
-    with SqliteDict("./db.sqlite") as db:
-        print("There are %s items in the database" % (len(db)))
-
+    >>> from sqlitedict import SqliteDict
+    >>>
+    >>> # The database is automatically closed when leaving the with section.
+    >>> # Uncommited objects are not saved on close. REMEMBER TO COMMIT!
+    >>>
+    >>> with SqliteDict("/tmp/db.sqlite") as db:
+    ...     print("There are %d items in the database" % len(db))
+    There are 3 items in the database
 
 Tables
 ------
@@ -77,20 +80,23 @@ Note: Writes are serialized, having multiple tables does not improve performance
 
 .. code-block:: python
 
-    from sqlitedict import SqliteDict
+    >>> from sqlitedict import SqliteDict
+    >>>
+    >>> products = SqliteDict("/tmp/db.sqlite", tablename="product", autocommit=True)
+    >>> manufacturers = SqliteDict("/tmp/db.sqlite", tablename="manufacturer", autocommit=True)
+    >>>
+    >>> products["1"] = {"name": "first item",  "manufacturer_id": "1"}
+    >>> products["2"] = {"name": "second item", "manufacturer_id": "1"}
+    >>>
+    >>> manufacturers["1"] = {"manufacturer_name": "afactory", "location": "US"}
+    >>> manufacturers["2"] = {"manufacturer_name": "anotherfactory", "location": "UK"}
+    >>>
+    >>> tables = products.get_tablenames('/tmp/db.sqlite')
+    >>> print(tables)
+    ['unnamed', 'product', 'manufacturer']
 
-    products = SqliteDict("./db.sqlite", tablename="product", autocommit=True)
-    manufacturers = SqliteDict("./db.sqlite", tablename="manufacturer", autocommit=True)
-
-    products["1"] = {"name": "first item",  "manufacturer_id": "1"}
-    products["2"] = {"name": "second item", "manufacturer_id": "1"}
-
-    manufacturers["1"] = {"manufacturer_name": "afactory", "location": "US"}
-    manufacturers["2"] = {"manufacturer_name": "anotherfactory", "location": "UK"}
-
-    tables = products.get_tablenames()
-    print(tables)
-    # ["product", "manufacturer"]
+In case you're wondering, the unnamed table comes from the previous examples,
+where we did not specify a table name.
 
 Serialization
 -------------
@@ -103,19 +109,20 @@ It's possible to use a custom (de)serializer, notably for JSON and for compressi
 
 .. code-block:: python
 
-    # Use JSON instead of pickle
-    import json
-    mydict = SqliteDict("./my_db.sqlite", encode=json.dumps, decode=json.loads)
-
-    # Apply zlib compression after pickling
-    import zlib, pickle, sqlite3
-
-    def my_encode(obj):
-        return sqlite3.Binary(zlib.compress(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)))
-    def my_decode(obj):
-        return pickle.loads(zlib.decompress(bytes(obj)))
-
-    mydict = SqliteDict("./my_db.sqlite", encode=my_encode, decode=my_decode)
+    >>> # Use JSON instead of pickle
+    >>> import json
+    >>> mydict = SqliteDict("/tmp/db.sqlite", encode=json.dumps, decode=json.loads)
+    >>>
+    >>> # Apply zlib compression after pickling
+    >>> import zlib, pickle, sqlite3
+    >>>
+    >>> def my_encode(obj):
+    ...     return sqlite3.Binary(zlib.compress(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)))
+    >>>
+    >>> def my_decode(obj):
+    ...     return pickle.loads(zlib.decompress(bytes(obj)))
+    >>>
+    >>> mydict = SqliteDict("/tmp/db.sqlite", encode=my_encode, decode=my_decode)
 
 More
 ----
@@ -128,11 +135,16 @@ explicitly assign the mutated object back to SqliteDict:
 
 .. code-block:: python
 
-    item = db["123"]
-    item["name"] = "hello world" # sqlite DB not updated here!
-    db["123"] = val  # now updated
-
-    db.commit() # remember to commit (or set autocommit)
+    >>> from sqlitedict import SqliteDict
+    >>> db = SqliteDict("/tmp/db.sqlite")
+    >>> db["colors"] = {"red": (255, 0, 0)}
+    >>> db.commit()
+    >>>
+    >>> colors = db["colors"]
+    >>> colors["blue"] = (0, 0, 255) # sqlite DB not updated here!
+    >>> db["colors"] = colors  # now updated
+    >>>
+    >>> db.commit() # remember to commit (or set autocommit)
 
 Features
 ========
@@ -201,3 +213,14 @@ License
 
 ``sqlitedict`` is open source software released under the `Apache 2.0 license <http://opensource.org/licenses/apache2.0.php>`_.
 Copyright (c) 2011-now `Radim Řehůřek <http://radimrehurek.com>`_ and contributors.
+
+Housekeeping
+============
+
+Clean up the test database to keep each doctest run idempotent:
+
+.. code-block:: python
+
+   >>> import os
+   >>> if __name__ == '__main__':
+   ...     os.unlink('/tmp/db.sqlite')
