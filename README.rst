@@ -24,7 +24,7 @@ Write
 .. code-block:: python
 
     >>> from sqlitedict import SqliteDict
-    >>> db = SqliteDict("/tmp/db.sqlite")
+    >>> db = SqliteDict("db.sqlite")
     >>>
     >>> db["1"] = {"name": "first item"}
     >>> db["2"] = {"name": "second item"}
@@ -37,6 +37,8 @@ Write
     >>> # Oops, forgot to commit here, that object will never be saved.
     >>> # Always remember to commit, or enable autocommit with SqliteDict("/tmp/db.sqlite", autocommit=True)
     >>> # Autocommit is off by default for performance.
+    >>>
+    >>> db.close()
 
 Read
 ----
@@ -44,7 +46,7 @@ Read
 .. code-block:: python
 
     >>> from sqlitedict import SqliteDict
-    >>> db = SqliteDict("/tmp/db.sqlite")
+    >>> db = SqliteDict("db.sqlite")
     >>>
     >>> print("There are %d items in the database" % len(db))
     There are 3 items in the database
@@ -55,6 +57,8 @@ Read
     1={'name': 'first item'}
     2={'name': 'second item'}
     3={'name': 'yet another item'}
+    >>>
+    >>> db.close()
 
 Context Manager
 ---------------
@@ -66,7 +70,7 @@ Context Manager
     >>> # The database is automatically closed when leaving the with section.
     >>> # Uncommited objects are not saved on close. REMEMBER TO COMMIT!
     >>>
-    >>> with SqliteDict("/tmp/db.sqlite") as db:
+    >>> with SqliteDict("db.sqlite") as db:
     ...     print("There are %d items in the database" % len(db))
     There are 3 items in the database
 
@@ -82,8 +86,8 @@ Note: Writes are serialized, having multiple tables does not improve performance
 
     >>> from sqlitedict import SqliteDict
     >>>
-    >>> products = SqliteDict("/tmp/db.sqlite", tablename="product", autocommit=True)
-    >>> manufacturers = SqliteDict("/tmp/db.sqlite", tablename="manufacturer", autocommit=True)
+    >>> products = SqliteDict("db.sqlite", tablename="product", autocommit=True)
+    >>> manufacturers = SqliteDict("db.sqlite", tablename="manufacturer", autocommit=True)
     >>>
     >>> products["1"] = {"name": "first item",  "manufacturer_id": "1"}
     >>> products["2"] = {"name": "second item", "manufacturer_id": "1"}
@@ -91,9 +95,12 @@ Note: Writes are serialized, having multiple tables does not improve performance
     >>> manufacturers["1"] = {"manufacturer_name": "afactory", "location": "US"}
     >>> manufacturers["2"] = {"manufacturer_name": "anotherfactory", "location": "UK"}
     >>>
-    >>> tables = products.get_tablenames('/tmp/db.sqlite')
+    >>> tables = products.get_tablenames('db.sqlite')
     >>> print(tables)
     ['unnamed', 'product', 'manufacturer']
+    >>>
+    >>> products.close()
+    >>> manufacturers.close()
 
 In case you're wondering, the unnamed table comes from the previous examples,
 where we did not specify a table name.
@@ -111,7 +118,8 @@ It's possible to use a custom (de)serializer, notably for JSON and for compressi
 
     >>> # Use JSON instead of pickle
     >>> import json
-    >>> mydict = SqliteDict("/tmp/db.sqlite", encode=json.dumps, decode=json.loads)
+    >>> with SqliteDict("db.sqlite", encode=json.dumps, decode=json.loads) as mydict:
+    ...     pass
     >>>
     >>> # Apply zlib compression after pickling
     >>> import zlib, pickle, sqlite3
@@ -122,7 +130,8 @@ It's possible to use a custom (de)serializer, notably for JSON and for compressi
     >>> def my_decode(obj):
     ...     return pickle.loads(zlib.decompress(bytes(obj)))
     >>>
-    >>> mydict = SqliteDict("/tmp/db.sqlite", encode=my_encode, decode=my_decode)
+    >>> with SqliteDict("db.sqlite", encode=my_encode, decode=my_decode) as mydict:
+    ...     pass
 
 More
 ----
@@ -136,7 +145,7 @@ explicitly assign the mutated object back to SqliteDict:
 .. code-block:: python
 
     >>> from sqlitedict import SqliteDict
-    >>> db = SqliteDict("/tmp/db.sqlite")
+    >>> db = SqliteDict("db.sqlite")
     >>> db["colors"] = {"red": (255, 0, 0)}
     >>> db.commit()
     >>>
@@ -145,6 +154,7 @@ explicitly assign the mutated object back to SqliteDict:
     >>> db["colors"] = colors  # now updated
     >>>
     >>> db.commit() # remember to commit (or set autocommit)
+    >>> db.close()
 
 Features
 ========
@@ -223,4 +233,4 @@ Clean up the test database to keep each doctest run idempotent:
 
    >>> import os
    >>> if __name__ == '__main__':
-   ...     os.unlink('/tmp/db.sqlite')
+   ...     os.unlink('db.sqlite')
