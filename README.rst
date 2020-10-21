@@ -177,7 +177,6 @@ Performance
 * sqlitedict is mostly a thin wrapper around sqlite, conserving efficiency.
 * ``items()`` ``keys()`` ``values()`` are iterating one by one, ``len()`` is calling sqlite to count rows.
 * For better performance, write objects in batch and ``commit()`` once.
-* When using pickle, make sure cPickle is installed (pip install cPickle).
 
 Installation
 ============
