@@ -174,8 +174,9 @@ Performance
 ===========
 
 * sqlite is efficient and can work effectively with large databases (multi gigabytes), not limited by memory.
-* sqlitedict is mostly a thin wrapper around sqlite, conserving efficiency.
-* ``items()`` ``keys()`` ``values()`` are iterating one by one, ``len()`` is calling sqlite to count rows.
+* sqlitedict is mostly a thin wrapper around sqlite.
+* ``items()`` ``keys()`` ``values()`` are iterating one by one, the rows are loaded in a worker thread and queued in memory.
+* ``len()`` is calling sqlite to count rows, that is scanning the whole table.
 * For better performance, write objects in batch and ``commit()`` once.
 
 Installation
