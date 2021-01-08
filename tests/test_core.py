@@ -143,6 +143,26 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
             with self.assertRaises(RuntimeError):
                 func()
 
+    def test_readonly_table(self):
+        """
+        Read-only access on a non-existant tablename should raise RuntimeError,
+        and not create a new (empty) table.
+        """
+        fname = norm_file('tests/db/sqlitedict-override-test.sqlite')
+        dummy_tablename = 'table404'
+        orig_db = SqliteDict(filename=fname)
+        orig_db['key'] = 'value'
+        orig_db['key_two'] = 2
+        orig_db.commit()
+        orig_db.close()
+
+        self.assertFalse(dummy_tablename in SqliteDict.get_tablenames(fname))
+
+        with self.assertRaises(RuntimeError):
+            SqliteDict(filename=fname, tablename=dummy_tablename, flag='r')
+
+        self.assertFalse(dummy_tablename in SqliteDict.get_tablenames(fname))
+
     def test_irregular_tablenames(self):
         """Irregular table names need to be quoted"""
         def __test_irregular_tablenames(tablename):
