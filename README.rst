@@ -17,6 +17,7 @@ dict-like interface and support for multi-thread access:
 
 .. code-block:: python
 
+  >>> from __future__ import print_function  # only necessary for Py2.7
   >>> from sqlitedict import SqliteDict
   >>> mydict = SqliteDict('./my_db.sqlite', autocommit=True)
   >>> mydict['some_key'] = 'any_picklable_object'
