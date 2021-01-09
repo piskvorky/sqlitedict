@@ -36,10 +36,7 @@ import traceback
 
 from threading import Thread
 
-try:
-    __version__ = __import__('pkg_resources').get_distribution('sqlitedict').version
-except Exception:
-    __version__ = '?'
+__version__ = '1.7.0.dev0'
 
 major_version = sys.version_info[0]
 if major_version < 3:  # py <= 2.x
@@ -160,19 +157,25 @@ class SqliteDict(DictClass):
                 raise RuntimeError('Error! The directory does not exist, %s' % dirname)
 
         self.filename = filename
-        if '"' in tablename:
-            raise ValueError('Invalid tablename %r' % tablename)
-        self.tablename = tablename
+
+        # Use standard SQL escaping of double quote characters in identifiers, by doubling them.
+        # See https://github.com/RaRe-Technologies/sqlitedict/pull/113
+        self.tablename = tablename.replace('"', '""')
+
         self.autocommit = autocommit
         self.journal_mode = journal_mode
         self.encode = encode
         self.decode = decode
 
-        logger.info("opening Sqlite table %r in %s" % (tablename, filename))
-        MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
+        logger.info("opening Sqlite table %r in %r" % (tablename, filename))
         self.conn = self._new_conn()
-        self.conn.execute(MAKE_TABLE)
-        self.conn.commit()
+        if self.flag == 'r':
+            if not self.tablename in SqliteDict.get_tablenames(self.filename):
+                raise RuntimeError('Refusing to create a new table "%s" in read-only DB mode' % tablename)
+        else:
+            MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
+            self.conn.execute(MAKE_TABLE)
+            self.conn.commit()
         if flag == 'w':
             self.clear()
 
@@ -251,6 +254,8 @@ class SqliteDict(DictClass):
 
         ADD_ITEM = 'REPLACE INTO "%s" (key, value) VALUES (?,?)' % self.tablename
         self.conn.execute(ADD_ITEM, (key, self.encode(value)))
+        if self.autocommit:
+            self.commit()
 
     def __delitem__(self, key):
         if self.flag == 'r':
@@ -260,6 +265,8 @@ class SqliteDict(DictClass):
             raise KeyError(key)
         DEL_ITEM = 'DELETE FROM "%s" WHERE key = ?' % self.tablename
         self.conn.execute(DEL_ITEM, (key,))
+        if self.autocommit:
+            self.commit()
 
     def update(self, items=(), **kwds):
         if self.flag == 'r':
@@ -275,6 +282,8 @@ class SqliteDict(DictClass):
         self.conn.executemany(UPDATE_ITEMS, items)
         if kwds:
             self.update(kwds)
+        if self.autocommit:
+            self.commit()
 
     def __iter__(self):
         return self.iterkeys()
@@ -542,3 +551,7 @@ class SqliteMultithread(Thread):
             # returning (by semaphore '--no more--'
             self.select_one('--close--')
             self.join()
+
+
+if __name__ == '__main__':
+    print(__version__)

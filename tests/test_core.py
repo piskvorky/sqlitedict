@@ -138,19 +138,40 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
             with self.assertRaises(RuntimeError):
                 func()
 
+    def test_readonly_table(self):
+        """
+        Read-only access on a non-existant tablename should raise RuntimeError,
+        and not create a new (empty) table.
+        """
+        fname = norm_file('tests/db/sqlitedict-override-test.sqlite')
+        dummy_tablename = 'table404'
+        orig_db = SqliteDict(filename=fname)
+        orig_db['key'] = 'value'
+        orig_db['key_two'] = 2
+        orig_db.commit()
+        orig_db.close()
+
+        self.assertFalse(dummy_tablename in SqliteDict.get_tablenames(fname))
+
+        with self.assertRaises(RuntimeError):
+            SqliteDict(filename=fname, tablename=dummy_tablename, flag='r')
+
+        self.assertFalse(dummy_tablename in SqliteDict.get_tablenames(fname))
+
     def test_irregular_tablenames(self):
         """Irregular table names need to be quoted"""
-        db = SqliteDict(':memory:', tablename='9nine')
-        db['key'] = 'value'
-        db.commit()
-        self.assertEqual(db['key'], 'value')
-        db.close()
+        def __test_irregular_tablenames(tablename):
+            filename = ':memory:'
+            db = SqliteDict(filename, tablename=tablename)
+            db['key'] = 'value'
+            db.commit()
+            self.assertEqual(db['key'], 'value')
+            db.close()
 
-        db = SqliteDict(':memory:', tablename='outer space')
-        db['key'] = 'value'
-        db.commit()
-        self.assertEqual(db['key'], 'value')
-        db.close()
+        __test_irregular_tablenames('9nine')
+        __test_irregular_tablenames('outer space')
+        __test_irregular_tablenames('table with a "quoted" name')
+        __test_irregular_tablenames("table with a \"quoted \xe1cute\" name")
 
         with self.assertRaisesRegexp(ValueError, r'^Invalid tablename '):
             SqliteDict(':memory:', '"')
