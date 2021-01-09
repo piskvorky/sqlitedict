@@ -19,11 +19,14 @@ dict-like interface and support for multi-thread access:
 
   >>> from sqlitedict import SqliteDict
   >>> mydict = SqliteDict('./my_db.sqlite', autocommit=True)
-  >>> mydict['some_key'] = any_picklable_object
-  >>> print mydict['some_key']  # prints the new value
+  >>> mydict['some_key'] = 'any_picklable_object'
+  >>> print(mydict['some_key'])  # prints the new value
+  any_picklable_object
   >>> for key, value in mydict.iteritems():
-  >>>     print key, value
-  >>> print len(mydict) # etc... all dict functions work
+  ...     print(key, value)
+  some_key any_picklable_object
+  >>> print(len(mydict)) # etc... all dict functions work
+  1
   >>> mydict.close()
 
 Pickle is used internally to (de)serialize the values. Keys are arbitrary strings,
@@ -42,7 +45,8 @@ don't forget to call ``mydict.commit()`` when done with a transaction:
   ...     mydict['some_key'] = u"new value"
   ...     # no explicit commit here
   >>> with SqliteDict('./my_db.sqlite') as mydict:  # re-open the same DB
-  ...     print mydict['some_key']  # outputs 'first value', not 'new value'
+  ...     print(mydict['some_key'])  # outputs 'first value', not 'new value'
+  first value
 
 
 Features
@@ -59,19 +63,19 @@ Features
 
 * Support for **custom serialization or compression**:
 
-  .. code-block:: python
+.. code-block:: python
 
-      # use JSON instead of pickle
-      >>> import json
-      >>> mydict = SqliteDict('./my_db.sqlite', encode=json.dumps, decode=json.loads)
+  # use JSON instead of pickle
+  >>> import json
+  >>> mydict = SqliteDict('./my_db.sqlite', encode=json.dumps, decode=json.loads)
 
-      # apply zlib compression after pickling
-      >>> import zlib, pickle, sqlite3
-      >>> def my_encode(obj):
-      ...     return sqlite3.Binary(zlib.compress(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)))
-      >>> def my_decode(obj):
-      ...     return pickle.loads(zlib.decompress(bytes(obj)))
-      >>> mydict = SqliteDict('./my_db.sqlite', encode=my_encode, decode=my_decode)
+  # apply zlib compression after pickling
+  >>> import zlib, pickle, sqlite3
+  >>> def my_encode(obj):
+  ...     return sqlite3.Binary(zlib.compress(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)))
+  >>> def my_decode(obj):
+  ...     return pickle.loads(zlib.decompress(bytes(obj)))
+  >>> mydict = SqliteDict('./my_db.sqlite', encode=my_encode, decode=my_decode)
 
 
 Installation
@@ -94,8 +98,8 @@ Standard Python document strings are inside the module:
 
 .. code-block:: python
 
-  >>> import sqlitedict
-  >>> help(sqlitedict)
+  import sqlitedict
+  help(sqlitedict)
 
 (but it's just ``dict`` with a commit, really).
 
@@ -134,6 +138,14 @@ Comments, bug reports
 ``sqlitedict`` resides on `github <https://github.com/RaRe-Technologies/sqlitedict>`_. You can file
 issues or pull requests there.
 
+
+Housekeeping
+------------
+
+.. code-block:: python
+
+   >>> import os
+   >>> os.unlink('my_db.sqlite')
 
 ----
 
