@@ -170,8 +170,9 @@ class SqliteDict(DictClass):
         logger.info("opening Sqlite table %r in %r" % (tablename, filename))
         self.conn = self._new_conn()
         if self.flag == 'r':
-            if not self.tablename in SqliteDict.get_tablenames(self.filename):
-                raise RuntimeError('Refusing to create a new table "%s" in read-only DB mode' % tablename)
+            if self.tablename not in SqliteDict.get_tablenames(self.filename):
+                msg = 'Refusing to create a new table "%s" in read-only DB mode' % tablename
+                raise RuntimeError(msg)
         else:
             MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
             self.conn.execute(MAKE_TABLE)
