@@ -30,7 +30,6 @@ import sqlite3
 import os
 import sys
 import tempfile
-import random
 import logging
 import traceback
 
@@ -140,8 +139,8 @@ class SqliteDict(DictClass):
         """
         self.in_temp = filename is None
         if self.in_temp:
-            randpart = hex(random.randint(0, 0xffffff))[2:]
-            filename = os.path.join(tempfile.gettempdir(), 'sqldict' + randpart)
+            fd, filename = tempfile.mkstemp(prefix='sqldict')
+            os.close(fd)
 
         if flag not in SqliteDict.VALID_FLAGS:
             raise RuntimeError("Unrecognized flag: %s" % flag)
