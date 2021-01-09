@@ -551,3 +551,7 @@ class SqliteMultithread(Thread):
             self.select_one('--close--')
             self.join()
 #endclass SqliteMultithread
+
+
+if __name__ == '__main__':
+    print(__version__)
