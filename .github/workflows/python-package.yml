@@ -35,3 +35,4 @@ jobs:
 
       - name: Run doctests
         run: python -m doctest README.rst
+        if: ${{ matrix.python-version != 2.7 }}
