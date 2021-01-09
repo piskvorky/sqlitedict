@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Do not create tables when in read-only mode (PR [#128](https://github.com/RaRe-Technologies/sqlitedict/pull/128), [@hholst80](https://github.com/hholst80))
+
 ## 1.7.0, 04/09/2018
 
 * Add a blocking commit after each modification if autocommit is enabled. (PR [#94](https://github.com/RaRe-Technologies/sqlitedict/pull/94), [@endlisnis](https://github.com/endlisnis))
