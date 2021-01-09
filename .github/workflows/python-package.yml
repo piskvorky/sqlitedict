@@ -32,3 +32,6 @@ jobs:
 
       - name: Run tests
         run: pytest tests
+
+      - name: Run doctests
+        run: python -m doctest README.rst
