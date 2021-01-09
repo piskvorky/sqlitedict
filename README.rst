@@ -81,7 +81,7 @@ Features
 Installation
 ------------
 
-The module has no dependencies beyond Python itself. The minimum Python version is 2.5, continuously tested on Python 2.6, 2.7, 3.3 and 3.4 `on Travis <https://travis-ci.org/RaRe-Technologies/sqlitedict>`_.
+The module has no dependencies beyond Python itself. The minimum Python version is 2.5, continuously tested on Python 2.7, and above on `on Github Actions <https://github.com/RaRe-Technologies/sqlitedict/actions>`_.
 
 Install or upgrade with::
 
@@ -120,16 +120,16 @@ For developers
 
 Install::
 
-    # pip install nose
-    # pip install coverage
+    # pip install pytest coverage pytest-coverage
 
 To perform all tests::
 
-   # make test-all
+    # mkdir -p tests/db
+    # pytest tests
 
 To perform all tests with coverage::
 
-   # make test-all-with-coverage
+    # pytest tests --cov=sqlitedict
 
 
 Comments, bug reports
