@@ -1,14 +1,13 @@
 """Test cases for on-import logic."""
 import unittest
 import sys
-from accessories import TestCaseBackport
 
 
-class SqliteDict_cPickleImportTest(TestCaseBackport):
+class SqliteDict_cPickleImportTest(unittest.TestCase):
     """Verify fallback to 'pickle' module when 'cPickle' is not found."""
     def setUp(self):
         self.orig_meta_path = sys.meta_path
-        self.orig_sqlitedict = orig_sqlitedict = sys.modules.pop('sqlitedict', None)
+        self.orig_sqlitedict = sys.modules.pop('sqlitedict', None)
 
         class FauxMissingImport(object):
             def __init__(self, *args):
@@ -42,7 +41,7 @@ class SqliteDict_cPickleImportTest(TestCaseBackport):
         self.assertIs(sqlitedict.dumps, sys.modules['pickle'].dumps)
 
 
-class SqliteDictPython24Test(TestCaseBackport):
+class SqliteDictPython24Test(unittest.TestCase):
     """Verify ImportError when using python2.4 or earlier."""
     def setUp(self):
         # manually monkeypatch sys.version_info

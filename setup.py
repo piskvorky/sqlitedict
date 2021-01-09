@@ -41,12 +41,13 @@ class SetupDevelop(setuptools.command.develop.develop):
         # directly). The effect is that the development egg-link is installed.
         setuptools.command.develop.develop.run(self)
 
+
 SetupDevelop.__doc__ = setuptools.command.develop.develop.__doc__
 
 
 setup(
     name='sqlitedict',
-    version='1.6.0',
+    version='1.7.0',
     description='Persistent dict in Python, backed up by sqlite3 and pickle, multithread-safe.',
     long_description=read('README.rst'),
 
@@ -55,7 +56,7 @@ setup(
     # there is a bug in python2.5, preventing distutils from using any non-ascii characters :(
     # http://bugs.python.org/issue2562
     author='Radim Rehurek, Victor R. Escobar, Andrey Usov, Prasanna Swaminathan, Jeff Quast',
-    author_email="various",
+    author_email="me@radimrehurek.com",
     maintainer='Radim Rehurek',
     maintainer_email='me@radimrehurek.com',
 

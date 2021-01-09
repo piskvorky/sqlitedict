@@ -35,10 +35,7 @@ import traceback
 
 from threading import Thread
 
-try:
-    __version__ = __import__('pkg_resources').get_distribution('sqlitedict').version
-except Exception:
-    __version__ = '?'
+__version__ = '1.7.0.dev0'
 
 major_version = sys.version_info[0]
 if major_version < 3:  # py <= 2.x
@@ -159,19 +156,26 @@ class SqliteDict(DictClass):
                 raise RuntimeError('Error! The directory does not exist, %s' % dirname)
 
         self.filename = filename
-        if '"' in tablename:
-            raise ValueError('Invalid tablename %r' % tablename)
-        self.tablename = tablename
+
+        # Use standard SQL escaping of double quote characters in identifiers, by doubling them.
+        # See https://github.com/RaRe-Technologies/sqlitedict/pull/113
+        self.tablename = tablename.replace('"', '""')
+
         self.autocommit = autocommit
         self.journal_mode = journal_mode
         self.encode = encode
         self.decode = decode
 
-        logger.info("opening Sqlite table %r in %s" % (tablename, filename))
-        MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
+        logger.info("opening Sqlite table %r in %r" % (tablename, filename))
         self.conn = self._new_conn()
-        self.conn.execute(MAKE_TABLE)
-        self.conn.commit()
+        if self.flag == 'r':
+            if self.tablename not in SqliteDict.get_tablenames(self.filename):
+                msg = 'Refusing to create a new table "%s" in read-only DB mode' % tablename
+                raise RuntimeError(msg)
+        else:
+            MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
+            self.conn.execute(MAKE_TABLE)
+            self.conn.commit()
         if flag == 'w':
             self.clear()
 
@@ -288,7 +292,8 @@ class SqliteDict(DictClass):
         if self.flag == 'r':
             raise RuntimeError('Refusing to clear read-only SqliteDict')
 
-        CLEAR_ALL = 'DELETE FROM "%s";' % self.tablename  # avoid VACUUM, as it gives "OperationalError: database schema has changed"
+        # avoid VACUUM, as it gives "OperationalError: database schema has changed"
+        CLEAR_ALL = 'DELETE FROM "%s";' % self.tablename
         self.conn.commit()
         self.conn.execute(CLEAR_ALL)
         self.conn.commit()
@@ -361,11 +366,11 @@ class SqliteDict(DictClass):
             # in __del__ method.
             pass
 
+
 # Adding extra methods for python 2 compatibility (at import time)
 if major_version == 2:
     SqliteDict.__nonzero__ = SqliteDict.__bool__
     del SqliteDict.__bool__  # not needed and confusing
-#endclass SqliteDict
 
 
 class SqliteMultithread(Thread):
@@ -546,4 +551,7 @@ class SqliteMultithread(Thread):
             # returning (by semaphore '--no more--'
             self.select_one('--close--')
             self.join()
-#endclass SqliteMultithread
+
+
+if __name__ == '__main__':
+    print(__version__)
