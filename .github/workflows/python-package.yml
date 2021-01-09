@@ -20,7 +20,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Update pip
-        run: python -m pip install -U pip pytest coverage pytest-coverage
+        run: python -m pip install -U coverage flake8 pip pytest pytest-coverage
+
+      - name: Flake8
+        run: flake8 sqlitedict.py tests
 
       - name: Install sqlitedict
         run: python setup.py install

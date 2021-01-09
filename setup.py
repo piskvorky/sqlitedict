@@ -41,6 +41,7 @@ class SetupDevelop(setuptools.command.develop.develop):
         # directly). The effect is that the development egg-link is installed.
         setuptools.command.develop.develop.run(self)
 
+
 SetupDevelop.__doc__ = setuptools.command.develop.develop.__doc__
 
 

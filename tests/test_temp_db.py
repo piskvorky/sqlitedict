@@ -3,17 +3,14 @@
 #
 # This code is distributed under the terms and conditions
 # from the Apache License, Version 2.0
-
 import unittest
 import sqlitedict
 
-from accessories import TestCaseBackport
-
 from sys import version_info
 major_version = version_info[0]
-from accessories import norm_file
 
-class TempSqliteDictTest(TestCaseBackport):
+
+class TempSqliteDictTest(unittest.TestCase):
 
     def setUp(self):
         self.d = sqlitedict.SqliteDict()

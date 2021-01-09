@@ -170,8 +170,9 @@ class SqliteDict(DictClass):
         logger.info("opening Sqlite table %r in %r" % (tablename, filename))
         self.conn = self._new_conn()
         if self.flag == 'r':
-            if not self.tablename in SqliteDict.get_tablenames(self.filename):
-                raise RuntimeError('Refusing to create a new table "%s" in read-only DB mode' % tablename)
+            if self.tablename not in SqliteDict.get_tablenames(self.filename):
+                msg = 'Refusing to create a new table "%s" in read-only DB mode' % tablename
+                raise RuntimeError(msg)
         else:
             MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
             self.conn.execute(MAKE_TABLE)
@@ -292,7 +293,8 @@ class SqliteDict(DictClass):
         if self.flag == 'r':
             raise RuntimeError('Refusing to clear read-only SqliteDict')
 
-        CLEAR_ALL = 'DELETE FROM "%s";' % self.tablename  # avoid VACUUM, as it gives "OperationalError: database schema has changed"
+        # avoid VACUUM, as it gives "OperationalError: database schema has changed"
+        CLEAR_ALL = 'DELETE FROM "%s";' % self.tablename
         self.conn.commit()
         self.conn.execute(CLEAR_ALL)
         self.conn.commit()
@@ -335,7 +337,7 @@ class SqliteDict(DictClass):
         if self.in_temp:
             try:
                 os.remove(self.filename)
-            except:
+            except Exception:
                 pass
 
     def terminate(self):
@@ -365,11 +367,11 @@ class SqliteDict(DictClass):
             # in __del__ method.
             pass
 
+
 # Adding extra methods for python 2 compatibility (at import time)
 if major_version == 2:
     SqliteDict.__nonzero__ = SqliteDict.__bool__
     del SqliteDict.__bool__  # not needed and confusing
-#endclass SqliteDict
 
 
 class SqliteMultithread(Thread):
@@ -416,7 +418,7 @@ class SqliteMultithread(Thread):
             else:
                 try:
                     cursor.execute(req, arg)
-                except Exception as err:
+                except Exception:
                     self.exception = (e_type, e_value, e_tb) = sys.exc_info()
                     inner_stack = traceback.extract_stack()
 
@@ -550,7 +552,6 @@ class SqliteMultithread(Thread):
             # returning (by semaphore '--no more--'
             self.select_one('--close--')
             self.join()
-#endclass SqliteMultithread
 
 
 if __name__ == '__main__':
