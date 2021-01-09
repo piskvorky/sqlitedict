@@ -36,7 +36,7 @@ import traceback
 
 from threading import Thread
 
-__version__ = '1.7.0'
+__version__ = '1.7.0.dev0'
 
 major_version = sys.version_info[0]
 if major_version < 3:  # py <= 2.x
