@@ -57,6 +57,9 @@ if major_version < 3:  # py <= 2.x
             _locs_ = _globs_
         exec("""exec _code_ in _globs_, _locs_""")
 
+    class TimeoutError(OSError):
+        pass
+
     exec_("def reraise(tp, value, tb=None):\n"
           "    raise tp, value, tb\n")
 else:
