@@ -391,7 +391,7 @@ class SqliteMultithread(Thread):
         self.reqs = Queue()
         self.setDaemon(True)  # python2.5-compatible
         self.exception = None
-        self.initialized = None
+        self._initialized = None
         self.timeout = timeout
         self.log = logging.getLogger('sqlitedict.SqliteMultithread')
         self.start()
@@ -404,7 +404,7 @@ class SqliteMultithread(Thread):
                 conn = sqlite3.connect(self.filename, check_same_thread=False)
         except Exception as ex:
             self.log.exception("Failed to initialize connection for filename: %s" % self.filename)
-            self.exception = (e_type, e_value, e_tb) = sys.exc_info()
+            self.exception = sys.exc_info()
             raise
 
         try:
@@ -415,10 +415,10 @@ class SqliteMultithread(Thread):
             cursor.execute('PRAGMA synchronous=OFF')
         except Exception as ex:
             self.log.exception("Failed to execute PRAGMA statements.")
-            self.exception = (e_type, e_value, e_tb) = sys.exc_info()
+            self.exception = sys.exc_info()
             raise
 
-        self.initialized = True
+        self._initialized = True
 
         res = None
         while True:
@@ -434,7 +434,8 @@ class SqliteMultithread(Thread):
                 try:
                     cursor.execute(req, arg)
                 except Exception as err:
-                    self.exception = (e_type, e_value, e_tb) = sys.exc_info()
+                    self.exception = sys.exc_info()
+                    e_type, e_value, e_tb = self.exception
                     inner_stack = traceback.extract_stack()
 
                     # An exception occurred in our thread, but we may not
@@ -504,7 +505,7 @@ class SqliteMultithread(Thread):
         """
         `execute` calls are non-blocking: just queue up the request and return immediately.
         """
-        self.wait_for_initialization()
+        self._wait_for_initialization()
         self.check_raise_error()
 
         # NOTE: This might be a lot of information to pump into an input
@@ -569,7 +570,7 @@ class SqliteMultithread(Thread):
             self.select_one('--close--')
             self.join()
 
-    def wait_for_initialization(self):
+    def _wait_for_initialization(self):
         """
         Polls the 'initialized' flag to be set by the started Thread in run().
         """
@@ -584,7 +585,7 @@ class SqliteMultithread(Thread):
 
         start_time = time.time()
         while time.time() - start_time < self.timeout:
-            if self.initialized or self.exception:
+            if self._initialized or self.exception:
                 return
             time.sleep(0.1)
         raise TimeoutError("SqliteMultithread failed to flag initialization withing %0.0f seconds." % self.timeout)
