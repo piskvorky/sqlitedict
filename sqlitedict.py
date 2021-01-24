@@ -408,7 +408,7 @@ class SqliteMultithread(Thread):
                 conn = sqlite3.connect(self.filename, check_same_thread=False)
         except Exception as ex:
             self.log.exception("Failed to initialize connection for filename: %s" % self.filename)
-            self.exception = (e_type, e_value, e_tb) = sys.exc_info()
+            self.exception = sys.exc_info()
             raise
 
         try:
@@ -419,7 +419,7 @@ class SqliteMultithread(Thread):
             cursor.execute('PRAGMA synchronous=OFF')
         except Exception as ex:
             self.log.exception("Failed to execute PRAGMA statements.")
-            self.exception = (e_type, e_value, e_tb) = sys.exc_info()
+            self.exception = sys.exc_info()
             raise
 
         self._initialized = True
