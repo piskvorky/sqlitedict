@@ -398,7 +398,7 @@ class SqliteMultithread(Thread):
         self.reqs = Queue()
         self.setDaemon(True)  # python2.5-compatible
         self.exception = None
-        self._initialized = None
+        self._sqlitedict_thread_initialized = None
         self.timeout = timeout
         self.log = logging.getLogger('sqlitedict.SqliteMultithread')
         self.start()
@@ -425,7 +425,7 @@ class SqliteMultithread(Thread):
             self.exception = sys.exc_info()
             raise
 
-        self._initialized = True
+        self._sqlitedict_thread_initialized = True
 
         res = None
         while True:
@@ -591,7 +591,7 @@ class SqliteMultithread(Thread):
 
         start_time = time.time()
         while time.time() - start_time < self.timeout:
-            if self._initialized or self.exception:
+            if self._sqlitedict_thread_initialized or self.exception:
                 return
             time.sleep(0.1)
         raise TimeoutError("SqliteMultithread failed to flag initialization withing %0.0f seconds." % self.timeout)
