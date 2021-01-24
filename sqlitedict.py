@@ -30,17 +30,13 @@ import sqlite3
 import os
 import sys
 import tempfile
-import random
 import logging
 import time
 import traceback
 
 from threading import Thread
 
-try:
-    __version__ = __import__('pkg_resources').get_distribution('sqlitedict').version
-except:
-    __version__ = '?'
+__version__ = '1.7.0.dev0'
 
 major_version = sys.version_info[0]
 if major_version < 3:  # py <= 2.x
@@ -146,8 +142,8 @@ class SqliteDict(DictClass):
         """
         self.in_temp = filename is None
         if self.in_temp:
-            randpart = hex(random.randint(0, 0xffffff))[2:]
-            filename = os.path.join(tempfile.gettempdir(), 'sqldict' + randpart)
+            fd, filename = tempfile.mkstemp(prefix='sqldict')
+            os.close(fd)
 
         if flag not in SqliteDict.VALID_FLAGS:
             raise RuntimeError("Unrecognized flag: %s" % flag)
@@ -163,20 +159,27 @@ class SqliteDict(DictClass):
                 raise RuntimeError('Error! The directory does not exist, %s' % dirname)
 
         self.filename = filename
-        if '"' in tablename:
-            raise ValueError('Invalid tablename %r' % tablename)
-        self.tablename = tablename
+
+        # Use standard SQL escaping of double quote characters in identifiers, by doubling them.
+        # See https://github.com/RaRe-Technologies/sqlitedict/pull/113
+        self.tablename = tablename.replace('"', '""')
+
         self.autocommit = autocommit
         self.journal_mode = journal_mode
         self.encode = encode
         self.decode = decode
         self.timeout = timeout
 
-        logger.info("opening Sqlite table %r in %s" % (tablename, filename))
-        MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
+        logger.info("opening Sqlite table %r in %r" % (tablename, filename))
         self.conn = self._new_conn()
-        self.conn.execute(MAKE_TABLE)
-        self.conn.commit()
+        if self.flag == 'r':
+            if self.tablename not in SqliteDict.get_tablenames(self.filename):
+                msg = 'Refusing to create a new table "%s" in read-only DB mode' % tablename
+                raise RuntimeError(msg)
+        else:
+            MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % self.tablename
+            self.conn.execute(MAKE_TABLE)
+            self.conn.commit()
         if flag == 'w':
             self.clear()
 
@@ -294,7 +297,8 @@ class SqliteDict(DictClass):
         if self.flag == 'r':
             raise RuntimeError('Refusing to clear read-only SqliteDict')
 
-        CLEAR_ALL = 'DELETE FROM "%s";' % self.tablename  # avoid VACUUM, as it gives "OperationalError: database schema has changed"
+        # avoid VACUUM, as it gives "OperationalError: database schema has changed"
+        CLEAR_ALL = 'DELETE FROM "%s";' % self.tablename
         self.conn.commit()
         self.conn.execute(CLEAR_ALL)
         self.conn.commit()
@@ -337,7 +341,7 @@ class SqliteDict(DictClass):
         if self.in_temp:
             try:
                 os.remove(self.filename)
-            except:
+            except Exception:
                 pass
 
     def terminate(self):
@@ -367,11 +371,11 @@ class SqliteDict(DictClass):
             # in __del__ method.
             pass
 
+
 # Adding extra methods for python 2 compatibility (at import time)
 if major_version == 2:
     SqliteDict.__nonzero__ = SqliteDict.__bool__
     del SqliteDict.__bool__  # not needed and confusing
-#endclass SqliteDict
 
 
 class SqliteMultithread(Thread):
@@ -433,9 +437,8 @@ class SqliteMultithread(Thread):
             else:
                 try:
                     cursor.execute(req, arg)
-                except Exception as err:
-                    self.exception = sys.exc_info()
-                    e_type, e_value, e_tb = self.exception
+                except Exception:
+                    self.exception = (e_type, e_value, e_tb) = sys.exc_info()
                     inner_stack = traceback.extract_stack()
 
                     # An exception occurred in our thread, but we may not
@@ -591,3 +594,7 @@ class SqliteMultithread(Thread):
         raise TimeoutError("SqliteMultithread failed to flag initialization withing %0.0f seconds." % self.timeout)
 
 #endclass SqliteMultithread
+
+
+if __name__ == '__main__':
+    print(__version__)
