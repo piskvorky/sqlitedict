@@ -596,8 +596,6 @@ class SqliteMultithread(Thread):
             time.sleep(0.1)
         raise TimeoutError("SqliteMultithread failed to flag initialization withing %0.0f seconds." % self.timeout)
 
-# endclass SqliteMultithread
-
 
 if __name__ == '__main__':
     print(__version__)
