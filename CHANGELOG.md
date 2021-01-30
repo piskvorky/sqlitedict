@@ -4,6 +4,7 @@
 
 - Do not create tables when in read-only mode (PR [#128](https://github.com/RaRe-Technologies/sqlitedict/pull/128), [@hholst80](https://github.com/hholst80))
 - Use tempfile.mkstemp for safer temp file creation (PR [#106](https://github.com/RaRe-Technologies/sqlitedict/pull/106), [@ergoithz](https://github.com/ergoithz))
+- Fix deadlock where opening database fails  (PR [#107](https://github.com/RaRe-Technologies/sqlitedict/pull/107), [@padelt](https://github.com/padelt))
 
 ## 1.7.0, 04/09/2018
 
