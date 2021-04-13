@@ -469,6 +469,8 @@ class SqliteMultithread(Thread):
 
                 if res:
                     for rec in cursor:
+                        if res.is_canceled:
+                            break
                         res.put(rec)
                     res.put('--no more--')
 
@@ -534,14 +536,9 @@ class SqliteMultithread(Thread):
         request is dequeued, and although you can iterate over the result normally
         (`for res in self.select(): ...`), the entire result will be in memory.
         """
-        res = Queue()  # results of the select will appear as items in this queue
+        res = _CancelableQueue()  # results of the select will appear as items in this queue
         self.execute(req, arg, res)
-        while True:
-            rec = res.get()
-            self.check_raise_error()
-            if rec == '--no more--':
-                break
-            yield rec
+        return _QueueReader(self, res).read()
 
     def select_one(self, req, arg=None):
         """Return only the first row of the SELECT, or None if there are no matching rows."""
@@ -568,7 +565,7 @@ class SqliteMultithread(Thread):
             # can't process the request. Instead, push the close command to the requests
             # queue directly. If run() is still alive, it will exit gracefully. If not,
             # then there's nothing we can do anyway.
-            self.reqs.put(('--close--', None, Queue(), None))
+            self.reqs.put(('--close--', None, _CancelableQueue(), None))
         else:
             # we abuse 'select' to "iter" over a "--close--" statement so that we
             # can confirm the completion of close before joining the thread and
@@ -595,6 +592,37 @@ class SqliteMultithread(Thread):
                 return
             time.sleep(0.1)
         raise TimeoutError("SqliteMultithread failed to flag initialization withing %0.0f seconds." % self.timeout)
+
+
+class _CancelableQueue(Queue):
+    def __init__(self, *args, **kwargs) -> None:
+        super(Queue, self).__init__(*args, **kwargs)
+        self.is_canceled = False
+
+    def cancel(self):
+        self.is_canceled = True
+
+    def put(self, value):
+        if not self.is_canceled:
+            super(Queue, self).put(value)
+
+
+class _QueueReader:
+    def __init__(self, owner, queue) -> None:
+        self._owner = owner
+        self._queue = queue
+
+    def __del__(self):
+        # should call by GC
+        self._queue.cancel()
+
+    def read(self):
+        while True:
+            rec = self.get()
+            self._owner.check_raise_error()
+            if rec == '--no more--':
+                break
+            yield rec
 
 
 if __name__ == '__main__':
