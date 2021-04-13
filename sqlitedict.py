@@ -617,8 +617,8 @@ class _QueueReader:
         self._queue.cancel()
 
     def read(self):
-        while True:
-            rec = self.get()
+        while not self._queue.is_canceled:
+            rec = self._queue.get()
             self._owner.check_raise_error()
             if rec == '--no more--':
                 break
