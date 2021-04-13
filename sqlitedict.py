@@ -596,7 +596,7 @@ class SqliteMultithread(Thread):
 
 class _CancelableQueue(Queue):
     def __init__(self, *args, **kwargs):
-        super(Queue, self).__init__(*args, **kwargs)
+        super(_CancelableQueue, self).__init__(*args, **kwargs)
         self.is_canceled = False
 
     def cancel(self):
@@ -604,7 +604,7 @@ class _CancelableQueue(Queue):
 
     def put(self, value):
         if not self.is_canceled:
-            super(Queue, self).put(value)
+            super(_CancelableQueue, self).put(value)
 
 
 class _QueueReader:
