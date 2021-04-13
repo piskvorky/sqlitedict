@@ -594,7 +594,7 @@ class SqliteMultithread(Thread):
         raise TimeoutError("SqliteMultithread failed to flag initialization withing %0.0f seconds." % self.timeout)
 
 
-class _CancelableQueue(Queue):
+class _CancelableQueue(Queue, object):
     def __init__(self, *args, **kwargs):
         super(_CancelableQueue, self).__init__(*args, **kwargs)
         self.is_canceled = False
