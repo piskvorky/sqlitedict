@@ -105,6 +105,235 @@ def decode(obj):
     return loads(bytes(obj))
 
 
+class SqliteTableDict(DictClass):
+    VALID_FLAGS = ['c', 'r', 'w']
+
+    def __init__(self, filename=None, flag='c',
+                 autocommit=False, journal_mode="DELETE", encode=encode,
+                 decode=decode, timeout=5):
+        """
+        Initialize a thread-safe sqlite-backed dictionary. The dictionary will
+        be a database file `filename` containing multiple tables.
+        This class provides an upper level hierarchy of the SqliteDict
+        by using a similar structure, modifications are limited.
+
+        If no `filename` is given, a random file in temp will be used
+        (and deleted from temp once the dict is closed/deleted).
+
+        If you enable `autocommit`, changes will be committed after each
+        operation (more inefficient but safer). Otherwise, changes are
+        committed on `self.commit()`, `self.clear()` and `self.close()`.
+
+        Set `journal_mode` to 'OFF' if you're experiencing sqlite I/O problems
+        or if you need performance and don't care about crash-consistency.
+
+        The `flag` parameter. Exactly one of:
+          'c': default mode, open for read/write, creating the dbif necessary.
+          'w': open for r/w, but drop contents first (start with empty table)
+          'r': open as read-only
+
+        The `encode` and `decode` parameters are used to customize how the
+        values are serialized and deserialized.
+        The `encode` parameter must be a function that takes a single Python
+        object and returns a serialized representation.
+        The `decode` function must be a function that takes the serialized
+        representation produced by `encode` and returns a deserialized Python
+        object.
+        The default is to use pickle.
+
+        The `timeout` defines the maximum time (in seconds) to wait for
+        initial Thread startup.
+        """
+        self.in_temp = filename is None
+        if self.in_temp:
+            fd, filename = tempfile.mkstemp(prefix='sqldict')
+            os.close(fd)
+
+        if flag not in SqliteDict.VALID_FLAGS:
+            raise RuntimeError("Unrecognized flag: %s" % flag)
+        self.flag = flag
+
+        if flag == 'w':
+            if os.path.exists(filename):
+                os.remove(filename)
+
+        dirname = os.path.dirname(filename)
+        if dirname:
+            if not os.path.exists(dirname):
+                raise RuntimeError('Error! The directory does not exist, %s' % dirname)
+
+        self.filename = filename
+        self.autocommit = autocommit
+        self.journal_mode = journal_mode
+        self.encode = encode
+        self.decode = decode
+        self.timeout = timeout
+
+        logger.info("opening Sqlite Database %s" % filename)
+        self.conn = self._new_conn()
+
+    def _new_conn(self):
+        return SqliteMultithread(self.filename, autocommit=self.autocommit,
+                                 journal_mode=self.journal_mode,
+                                 timeout=self.timeout)
+
+    def __enter__(self):
+        if not hasattr(self, 'conn') or self.conn is None:
+            self.conn = self._new_conn()
+        return self
+
+    def __exit__(self, *exc_info):
+        self.close()
+
+    def __str__(self):
+        return "SqliteTableDict(%s)" % (self.filename)
+
+    def __repr__(self):
+        return str(self)  # no need of something complex
+
+    def __len__(self):
+        # returns number of tables in the database
+        GET_TABLES = 'SELECT * FROM sqlite_master WHERE type="table"'
+        res = self.conn.select(GET_TABLES)
+        res = [x for x in res]
+        return len(res)
+
+    @property
+    def tables(self):
+        GET_TABLES = 'SELECT * FROM sqlite_master WHERE type="table" ORDER BY rowid'
+        res = self.conn.select(GET_TABLES)
+        res = [x for x in res]
+        return res
+
+    def iterkeys(self):
+        GET_TABLES = 'SELECT name FROM sqlite_master WHERE type="table"'
+        for key in self.conn.select(GET_TABLES):
+            yield key[0]
+
+    def itervalues(self):
+        GET_TABLES = 'SELECT name FROM sqlite_master WHERE type="table"'
+        for tab in self.conn.select(GET_TABLES):
+            yield _Con_SqliteDict(
+                self.conn, tablename=tab[0], flag=self.flag,
+                encode=self.encode, decode=self.decode)
+
+    def iteritems(self):
+        GET_TABLES = 'SELECT name FROM sqlite_master WHERE type="table"'
+        for tab in self.conn.select(GET_TABLES):
+            yield tab[0], _Con_SqliteDict(
+                self.conn, tablename=tab[0], flag=self.flag,
+                encode=self.encode, decode=self.decode)
+
+    def keys(self):
+        return self.iterkeys() if major_version > 2 else list(self.iterkeys())
+
+    def values(self):
+        return self.itervalues() if major_version > 2 else list(self.itervalues())
+
+    def items(self):
+        return self.iteritems() if major_version > 2 else list(self.iteritems())
+
+    def __contains__(self, name):
+        HAS_ITEM = 'SELECT 1 FROM sqlite_master WHERE name = ?'
+        return self.conn.select_one(HAS_ITEM, (name,)) is not None
+
+    def __getitem__(self, name, key=None):
+        GET_ITEM = 'SELECT name FROM sqlite_master WHERE name = ?'
+        item = self.conn.select_one(GET_ITEM, (name,))
+        if item is None:
+            raise KeyError(name)
+        return _Con_SqliteDict(
+            self.conn, tablename=item[0], flag=self.flag,
+            encode=self.encode, decode=self.decode)
+
+    def add_table(self, name):
+        if self.flag == 'r':
+            raise RuntimeError('Refusing to delete from read-only SqliteDict')
+
+        MAKE_TABLE = 'CREATE TABLE IF NOT EXISTS "%s" (key TEXT PRIMARY KEY, value BLOB)' % name
+        self.conn.execute(MAKE_TABLE)
+        self.conn.commit()
+
+    def drop_table(self, name):
+        if self.flag == 'r':
+            raise RuntimeError('Refusing to delete from read-only SqliteDict')
+
+        DROP_TABLE = 'DROP TABLE IF EXISTS "%s"'
+        self.conn.execute(DROP_TABLE)
+        self.conn.commit()
+
+    def __iter__(self):
+        return self.iterkeys()
+
+    def clear(self):
+        if self.flag == 'r':
+            raise RuntimeError('Refusing to clear read-only SqliteDict')
+
+        # Drops all tables, use with caution
+        for tab in self.tables:
+            self.drop_table(tab)
+        self.conn.commit()
+        self.conn.execute(CLEAR_ALL)
+        self.conn.commit()
+
+    def commit(self, blocking=True):
+        """
+        Persist all data to disk.
+
+        When `blocking` is False, the commit command is queued, but the data is
+        not guaranteed persisted (default implication when autocommit=True).
+        """
+        if self.conn is not None:
+            self.conn.commit(blocking)
+    # Method Call to sync is a Method Call to commit
+    sync = commit
+
+    def close(self, do_log=True, force=False):
+        if do_log:
+            logger.debug("closing %s" % self)
+        if hasattr(self, 'conn') and self.conn is not None:
+            if self.conn.autocommit and not force:
+                # typically calls to commit are non-blocking when autocommit is
+                # used.  However, we need to block on close() to ensure any
+                # awaiting exceptions are handled and that all data is
+                # persisted to disk before returning.
+                self.conn.commit(blocking=True)
+            self.conn.close(force=force)
+            self.conn = None
+        if self.in_temp:
+            try:
+                os.remove(self.filename)
+            except Exception:
+                pass
+
+    def terminate(self):
+        """Delete the underlying database file. Use with care."""
+        if self.flag == 'r':
+            raise RuntimeError('Refusing to terminate read-only SqliteDict')
+
+        self.close()
+
+        if self.filename == ':memory:':
+            return
+
+        logger.info("deleting %s" % self.filename)
+        try:
+            if os.path.isfile(self.filename):
+                os.remove(self.filename)
+        except (OSError, IOError):
+            logger.exception("failed to delete %s" % (self.filename))
+
+    def __del__(self):
+        # like close(), but assume globals are gone by now (do not log!)
+        try:
+            self.close(do_log=False, force=True)
+        except Exception:
+            # prevent error log flood in case of multiple SqliteDicts
+            # closed after connection lost (exceptions are always ignored
+            # in __del__ method.
+            pass
+
+
 class SqliteDict(DictClass):
     VALID_FLAGS = ['c', 'r', 'w', 'n']
 
@@ -373,6 +602,38 @@ class SqliteDict(DictClass):
             # closed after connection lost (exceptions are always ignored
             # in __del__ method.
             pass
+
+
+class _Con_SqliteDict(SqliteDict):
+
+    def __init__(self, connection=None, tablename='unnamed', flag='c',
+                 encode=encode, decode=decode):
+        """
+        Initialize a thread-safe sqlite-backed dictionary. The dictionary will
+        be a table `tablename` in database file `filename`.
+
+        This class is a designed to be used as a connection passover to the
+        SqliteTableDict Class using the same connection. It can also be used
+        to convert an existing connection to a SqliteDict conncetion on a
+        single table `tablename`.
+        """
+        # Use standard SQL escaping of double quote characters in identifiers,
+        # by doubling them.
+        # See https://github.com/RaRe-Technologies/sqlitedict/pull/113
+        self.tablename = tablename.replace('"', '""')
+        logger.info("opening Sqlite table %s" % tablename)
+        self.conn = connection
+        self.flag = flag
+        self.encode = encode
+        self.decode = decode
+        self.autocommit = connection.autocommit
+        self.journal_mode = connection.journal_mode
+        self.timeout = connection.timeout
+
+    def __enter__(self):
+        if not hasattr(self, 'conn') or self.conn is None:
+            raise RuntimeError('Instance not connected')
+        return self
 
 
 # Adding extra methods for python 2 compatibility (at import time)
