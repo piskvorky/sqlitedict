@@ -17,7 +17,7 @@ import io
 import subprocess
 
 import setuptools.command.develop
-from distutils.core import setup
+from setuptools import setup
 
 
 def read(fname):
