@@ -170,8 +170,19 @@ Features
 
 * Support for **custom serialization or compression**:
 
-Performance
-===========
+.. code-block:: python
+
+  # use JSON instead of pickle
+  >>> import json
+  >>> mydict = SqliteDict('./my_db.sqlite', encode=json.dumps, decode=json.loads)
+
+  # apply zlib compression after pickling
+  >>> import zlib, pickle, sqlite3
+  >>> def my_encode(obj):
+  ...     return sqlite3.Binary(zlib.compress(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)))
+  >>> def my_decode(obj):
+  ...     return pickle.loads(zlib.decompress(bytes(obj)))
+  >>> mydict = SqliteDict('./my_db.sqlite', encode=my_encode, decode=my_decode)
 
 * sqlite is efficient and can work effectively with large databases (multi gigabytes), not limited by memory.
 * sqlitedict is mostly a thin wrapper around sqlite.
@@ -201,16 +212,17 @@ Testing
 
 Install::
 
-    # pip install nose
-    # pip install coverage
+    $ pip install pytest coverage pytest-coverage
 
 To perform all tests::
 
-   # make test-all
+    $ mkdir -p tests/db
+    $ pytest tests
+    $ python -m doctest README.rst
 
 To perform all tests with coverage::
 
-   # make test-all-with-coverage
+    $ pytest tests --cov=sqlitedict
 
 Comments, bug reports
 ---------------------

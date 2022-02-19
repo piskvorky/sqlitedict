@@ -1,0 +1,41 @@
+name: Test
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - python-version: '2.7'
+          - python-version: '3.5'
+          - python-version: '3.6'
+          - python-version: '3.7'
+          - python-version: '3.8'
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Update pip
+        run: python -m pip install -U coverage flake8 pip pytest pytest-coverage
+
+      - name: Flake8
+        run: flake8 sqlitedict.py tests
+
+      - name: Install sqlitedict
+        run: python setup.py install
+
+      - name: Prepare tests subdirectory
+        run: |
+          rm -f tests/db
+          mkdir -p tests/db
+
+      - name: Run tests
+        run: pytest tests --cov=sqlitedict
+
+      - name: Run doctests
+        run: python -m doctest README.rst
+        if: ${{ matrix.python-version != 2.7 }}

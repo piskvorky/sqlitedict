@@ -1,5 +1,8 @@
-import sys, os
+import os
+import sys
+
 import sqlitedict
+
 
 def test():
     "Verify autocommit just before program exits."

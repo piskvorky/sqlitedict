@@ -17,7 +17,7 @@ import io
 import subprocess
 
 import setuptools.command.develop
-from distutils.core import setup
+from setuptools import setup
 
 
 def read(fname):
@@ -40,6 +40,7 @@ class SetupDevelop(setuptools.command.develop.develop):
         # Call super() (except develop is an old-style class, so we must call
         # directly). The effect is that the development egg-link is installed.
         setuptools.command.develop.develop.run(self)
+
 
 SetupDevelop.__doc__ = setuptools.command.develop.develop.__doc__
 
