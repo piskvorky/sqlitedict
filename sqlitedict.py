@@ -109,7 +109,8 @@ class SqliteDict(DictClass):
     VALID_FLAGS = ['c', 'r', 'w', 'n']
 
     def __init__(self, filename=None, tablename='unnamed', flag='c',
-                 autocommit=False, journal_mode="DELETE", encode=encode, decode=decode, timeout=5):
+                 autocommit=False, journal_mode="DELETE", encode=encode,
+                 decode=decode, timeout=5, outer_stack=True):
         """
         Initialize a thread-safe sqlite-backed dictionary. The dictionary will
         be a table `tablename` in database file `filename`. A single file (=database)
@@ -124,6 +125,10 @@ class SqliteDict(DictClass):
 
         Set `journal_mode` to 'OFF' if you're experiencing sqlite I/O problems
         or if you need performance and don't care about crash-consistency.
+
+        Set `outer_stack` to False to disable the output of the outer exception
+        to the error logs.  This may improve the efficiency of sqlitedict
+        operation at the expense of a detailed exception trace.
 
         The `flag` parameter. Exactly one of:
           'c': default mode, open for read/write, creating the db/table if necessary.
@@ -172,6 +177,7 @@ class SqliteDict(DictClass):
         self.encode = encode
         self.decode = decode
         self.timeout = timeout
+        self._outer_stack = outer_stack
 
         logger.info("opening Sqlite table %r in %r" % (tablename, filename))
         self.conn = self._new_conn()
@@ -187,8 +193,13 @@ class SqliteDict(DictClass):
             self.clear()
 
     def _new_conn(self):
-        return SqliteMultithread(self.filename, autocommit=self.autocommit, journal_mode=self.journal_mode,
-                                 timeout=self.timeout)
+        return SqliteMultithread(
+            self.filename,
+            autocommit=self.autocommit,
+            journal_mode=self.journal_mode,
+            timeout=self.timeout,
+            outer_stack=self._outer_stack,
+        )
 
     def __enter__(self):
         if not hasattr(self, 'conn') or self.conn is None:
@@ -375,12 +386,6 @@ class SqliteDict(DictClass):
             pass
 
 
-# Adding extra methods for python 2 compatibility (at import time)
-if major_version == 2:
-    SqliteDict.__nonzero__ = SqliteDict.__bool__
-    del SqliteDict.__bool__  # not needed and confusing
-
-
 class SqliteMultithread(Thread):
     """
     Wrap sqlite connection in a way that allows concurrent requests from multiple threads.
@@ -389,7 +394,7 @@ class SqliteMultithread(Thread):
     in a separate thread (in the same order they arrived).
 
     """
-    def __init__(self, filename, autocommit, journal_mode, timeout):
+    def __init__(self, filename, autocommit, journal_mode, timeout, outer_stack=True):
         super(SqliteMultithread, self).__init__()
         self.filename = filename
         self.autocommit = autocommit
@@ -399,6 +404,7 @@ class SqliteMultithread(Thread):
         self.setDaemon(True)  # python2.5-compatible
         self.exception = None
         self._sqlitedict_thread_initialized = None
+        self._outer_stack = outer_stack
         self.timeout = timeout
         self.log = logging.getLogger('sqlitedict.SqliteMultithread')
         self.start()
@@ -462,10 +468,18 @@ class SqliteMultithread(Thread):
                         self.log.error(item)
 
                     self.log.error('')  # exception & outer stack w/blank line
-                    self.log.error('Outer stack:')
-                    for item in traceback.format_list(outer_stack):
-                        self.log.error(item)
-                    self.log.error('Exception will be re-raised at next call.')
+
+                    if self._outer_stack:
+                        self.log.error('Outer stack:')
+                        for item in traceback.format_list(outer_stack):
+                            self.log.error(item)
+                        self.log.error('Exception will be re-raised at next call.')
+                    else:
+                        self.log.error(
+                            'Unable to show the outer stack. Pass '
+                            'outer_stack=True when initializing the '
+                            'SqliteDict instance to show the outer stack.'
+                        )
 
                 if res:
                     for rec in cursor:
@@ -513,12 +527,15 @@ class SqliteMultithread(Thread):
         """
         self._wait_for_initialization()
         self.check_raise_error()
+        stack = None
 
-        # NOTE: This might be a lot of information to pump into an input
-        # queue, affecting performance.  I've also seen earlier versions of
-        # jython take a severe performance impact for throwing exceptions
-        # so often.
-        stack = traceback.extract_stack()[:-1]
+        if self._outer_stack:
+            # NOTE: This might be a lot of information to pump into an input
+            # queue, affecting performance.  I've also seen earlier versions of
+            # jython take a severe performance impact for throwing exceptions
+            # so often.
+            stack = traceback.extract_stack()[:-1]
+
         self.reqs.put((req, arg or tuple(), res, stack))
 
     def executemany(self, req, items):

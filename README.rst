@@ -60,6 +60,20 @@ Read
     >>>
     >>> db.close()
 
+Efficiency
+----------
+
+By default, sqlitedict's exception handling favors verbosity over efficiency.
+It extracts and outputs the outer exception stack to the error logs.
+If you favor efficiency, then initialize the DB with outer_stack=False.
+
+.. code-block:: python
+
+    >>> from sqlitedict import SqliteDict
+    >>> db = SqliteDict("example.sqlite", outer_stack=False)  # True is the default
+    >>> db[1]
+    {'name': 'first item'}
+
 Context Manager
 ---------------
 
