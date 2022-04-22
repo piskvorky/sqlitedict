@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 2.0.0, 04/03/2022
+
 This release supports Python 3.7 and above.
 If you need support for older versions, please use the previous release, 1.7.0.
 
