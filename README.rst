@@ -5,10 +5,10 @@ sqlitedict -- persistent ``dict``, backed by SQLite
 |Travis|_
 |License|_
 
-.. |Travis| image:: https://travis-ci.org/RaRe-Technologies/sqlitedict.svg?branch=master
+.. |GithubActions| image:: https://github.com/RaRe-Technologies/sqlitedict/actions/workflows/python-package.yml/badge.svg
 .. |Downloads| image:: https://img.shields.io/pypi/dm/sqlitedict.svg
 .. |License| image:: https://img.shields.io/pypi/l/sqlitedict.svg
-.. _Travis: https://travis-ci.org/RaRe-Technologies/sqlitedict
+.. _GithubActions: https://github.com/RaRe-Technologies/sqlitedict/actions/workflows/python-package.yml
 .. _Downloads: https://pypi.python.org/pypi/sqlitedict
 .. _License: https://pypi.python.org/pypi/sqlitedict
 
