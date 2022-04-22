@@ -2,7 +2,7 @@
 sqlitedict -- persistent ``dict``, backed by SQLite
 ===================================================
 
-|Travis|_
+|GithubActions|_
 |License|_
 
 .. |GithubActions| image:: https://github.com/RaRe-Technologies/sqlitedict/actions/workflows/python-package.yml/badge.svg
