@@ -34,6 +34,7 @@ import logging
 import time
 import traceback
 from base64 import b64decode, b64encode
+import weakref
 
 from threading import Thread
 
@@ -429,16 +430,20 @@ class SqliteMultithread(Thread):
 
         self._sqlitedict_thread_initialized = True
 
-        res = None
+        res_ref = None
         while True:
-            req, arg, res, outer_stack = self.reqs.get()
+            req, arg, res_ref, outer_stack = self.reqs.get()
+
             if req == '--close--':
-                assert res, ('--close-- without return queue', res)
+                assert res_ref, ('--close-- without return queue', res_ref)
                 break
             elif req == '--commit--':
                 conn.commit()
-                if res:
-                    res.put('--no more--')
+                if res_ref:
+                    res = res_ref()
+                    if res is not None:
+                        res.put('--no more--')
+                    del res
             else:
                 try:
                     cursor.execute(req, arg)
@@ -477,17 +482,29 @@ class SqliteMultithread(Thread):
                             'SqliteDict instance to show the outer stack.'
                         )
 
-                if res:
+                if res_ref:
                     for rec in cursor:
+                        res = res_ref()
+                        if res is None:
+                            break
                         res.put(rec)
-                    res.put('--no more--')
+                        del res
+
+                    res = res_ref()
+                    if res is not None:
+                        res.put('--no more--')
+                    del res
 
                 if self.autocommit:
                     conn.commit()
 
         self.log.debug('received: %s, send: --no more--', req)
         conn.close()
-        res.put('--no more--')
+
+        res = res_ref()
+        if res is not None:
+            res.put('--no more--')
+        del res
 
     def check_raise_error(self):
         """
@@ -548,7 +565,7 @@ class SqliteMultithread(Thread):
         (`for res in self.select(): ...`), the entire result will be in memory.
         """
         res = Queue()  # results of the select will appear as items in this queue
-        self.execute(req, arg, res)
+        self.execute(req, arg, weakref.ref(res))
         while True:
             rec = res.get()
             self.check_raise_error()
@@ -581,7 +598,7 @@ class SqliteMultithread(Thread):
             # can't process the request. Instead, push the close command to the requests
             # queue directly. If run() is still alive, it will exit gracefully. If not,
             # then there's nothing we can do anyway.
-            self.reqs.put(('--close--', None, Queue(), None))
+            self.reqs.put(('--close--', None, weakref.ref(Queue()), None))
         else:
             # we abuse 'select' to "iter" over a "--close--" statement so that we
             # can confirm the completion of close before joining the thread and
