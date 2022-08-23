@@ -378,10 +378,7 @@ class SqliteMultithread(Thread):
         self.journal_mode = journal_mode
         # use request queue of unlimited size
         self.reqs = Queue()
-        if sys.version_info.major == 3:
-            self.daemon = True  # python 3.x compatible
-        else:
-            self.setDaemon(True)  # python2.5-compatible
+        self.daemon = True
         self.exception = None
         self._sqlitedict_thread_initialized = None
         self._outer_stack = outer_stack
