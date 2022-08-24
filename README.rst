@@ -208,7 +208,7 @@ Installation
 ============
 
 The module has no dependencies beyond Python itself.
-The minimum Python version is 2.6, continuously tested on Python 2.6, 2.7, 3.3, 3.4, 3.5, 3.6 `on Travis <https://travis-ci.org/RaRe-Technologies/sqlitedict>`_.
+The minimum supported Python version is 3.7, continuously tested on Python 3.7, 3.8, 3.9, and 3.10 `on Travis <https://travis-ci.org/RaRe-Technologies/sqlitedict>`_.
 
 Install or upgrade with::
 
