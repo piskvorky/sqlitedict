@@ -100,7 +100,6 @@ class SqliteDict(DictClass):
 
     def __init__(self, filename=None, tablename='unnamed', flag='c',
                  autocommit=False, journal_mode="DELETE", encode=encode,
-                 #decode=decode, encode_key=identity, decode_key=identity, 
                  decode=decode, encode_key=identity, decode_key=identity, 
                  timeout=5, outer_stack=True):
         """
