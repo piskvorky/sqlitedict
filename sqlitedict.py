@@ -82,13 +82,16 @@ def decode(obj):
     """Deserialize objects retrieved from SQLite."""
     return loads(bytes(obj))
 
+
 def encode_key(key):
     """Serialize a key using pickle + base64 encoding to text accepted by SQLite."""
     return b64encode(dumps(key, protocol=PICKLE_PROTOCOL)).decode("ascii")
 
+
 def decode_key(key):
     """Deserialize a key retrieved from SQLite."""
     return loads(b64decode(key.encode("ascii")))
+
 
 def identity(obj):
     """Identity f(x) = x function for encoding/decoding."""
@@ -100,7 +103,7 @@ class SqliteDict(DictClass):
 
     def __init__(self, filename=None, tablename='unnamed', flag='c',
                  autocommit=False, journal_mode="DELETE", encode=encode,
-                 decode=decode, encode_key=identity, decode_key=identity, 
+                 decode=decode, encode_key=identity, decode_key=identity,
                  timeout=5, outer_stack=True):
         """
         Initialize a thread-safe sqlite-backed dictionary. The dictionary will

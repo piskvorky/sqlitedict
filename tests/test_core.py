@@ -297,11 +297,12 @@ class TablenamesTest(unittest.TestCase):
         tablenames = SqliteDict.get_tablenames('tests/db/tablenames-test-2.sqlite')
         self.assertEqual(tablenames, ['table1', 'table2'])
 
+
 class SqliteDictKeySerializationTest(unittest.TestCase):
     def setUp(self):
         self.fname = norm_file('tests/db-encode-key/sqlitedict.sqlite')
         self.db = SqliteDict(
-            filename=self.fname, tablename='test', 
+            filename=self.fname, tablename='test',
             encode_key=sqlitedict.encode_key, decode_key=sqlitedict.decode_key,
         )
 
@@ -310,4 +311,3 @@ class SqliteDictKeySerializationTest(unittest.TestCase):
         assert self.db['test'] == -42
         self.db[(0, 1, 2)] = 17
         assert self.db[(0, 1, 2)] == 17
-
