@@ -147,6 +147,15 @@ It's possible to use a custom (de)serializer, notably for JSON and for compressi
     >>> with SqliteDict("example.sqlite", encode=my_encode, decode=my_decode) as mydict:
     ...     pass
 
+It's also possible to use a custom (de)serializer for keys to allow non-string keys.
+
+.. code-block:: python
+
+    >>> # Use key encoding instead of default string keys only
+    >>> from sqlitedict import encode_key, decode_key
+    >>> with SqliteDict("example.sqlite", encode_key=encode_key, decode_key=decode_key) as mydict:
+    ...     pass
+
 More
 ----
 

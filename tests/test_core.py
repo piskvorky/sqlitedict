@@ -248,7 +248,7 @@ class SqliteDictJsonSerializationTest(unittest.TestCase):
         os.rmdir(os.path.dirname(self.fname))
 
     def get_json(self, key):
-        return self.db.conn.select_one('SELECT value FROM test WHERE key = ?', (key,))[0]
+        return self.db.conn.select_one('SELECT value FROM test WHERE key = ?', (self.db.encode_key(key),))[0]
 
     def test_int(self):
         self.db['test'] = -42
@@ -296,3 +296,18 @@ class TablenamesTest(unittest.TestCase):
 
         tablenames = SqliteDict.get_tablenames('tests/db/tablenames-test-2.sqlite')
         self.assertEqual(tablenames, ['table1', 'table2'])
+
+
+class SqliteDictKeySerializationTest(unittest.TestCase):
+    def setUp(self):
+        self.fname = norm_file('tests/db-encode-key/sqlitedict.sqlite')
+        self.db = SqliteDict(
+            filename=self.fname, tablename='test',
+            encode_key=sqlitedict.encode_key, decode_key=sqlitedict.decode_key,
+        )
+
+    def test_nonstr_keys(self):
+        self.db['test'] = -42
+        assert self.db['test'] == -42
+        self.db[(0, 1, 2)] = 17
+        assert self.db[(0, 1, 2)] == 17

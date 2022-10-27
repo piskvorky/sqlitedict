@@ -33,6 +33,7 @@ import tempfile
 import logging
 import time
 import traceback
+from base64 import b64decode, b64encode
 
 from threading import Thread
 
@@ -82,12 +83,28 @@ def decode(obj):
     return loads(bytes(obj))
 
 
+def encode_key(key):
+    """Serialize a key using pickle + base64 encoding to text accepted by SQLite."""
+    return b64encode(dumps(key, protocol=PICKLE_PROTOCOL)).decode("ascii")
+
+
+def decode_key(key):
+    """Deserialize a key retrieved from SQLite."""
+    return loads(b64decode(key.encode("ascii")))
+
+
+def identity(obj):
+    """Identity f(x) = x function for encoding/decoding."""
+    return obj
+
+
 class SqliteDict(DictClass):
     VALID_FLAGS = ['c', 'r', 'w', 'n']
 
     def __init__(self, filename=None, tablename='unnamed', flag='c',
                  autocommit=False, journal_mode="DELETE", encode=encode,
-                 decode=decode, timeout=5, outer_stack=True):
+                 decode=decode, encode_key=identity, decode_key=identity,
+                 timeout=5, outer_stack=True):
         """
         Initialize a thread-safe sqlite-backed dictionary. The dictionary will
         be a table `tablename` in database file `filename`. A single file (=database)
@@ -153,6 +170,8 @@ class SqliteDict(DictClass):
         self.journal_mode = journal_mode
         self.encode = encode
         self.decode = decode
+        self.encode_key = encode_key
+        self.decode_key = decode_key
         self.timeout = timeout
         self._outer_stack = outer_stack
 
@@ -212,7 +231,7 @@ class SqliteDict(DictClass):
     def iterkeys(self):
         GET_KEYS = 'SELECT key FROM "%s" ORDER BY rowid' % self.tablename
         for key in self.conn.select(GET_KEYS):
-            yield key[0]
+            yield self.decode_key(key[0])
 
     def itervalues(self):
         GET_VALUES = 'SELECT value FROM "%s" ORDER BY rowid' % self.tablename
@@ -222,7 +241,7 @@ class SqliteDict(DictClass):
     def iteritems(self):
         GET_ITEMS = 'SELECT key, value FROM "%s" ORDER BY rowid' % self.tablename
         for key, value in self.conn.select(GET_ITEMS):
-            yield key, self.decode(value)
+            yield self.decode_key(key), self.decode(value)
 
     def keys(self):
         return self.iterkeys()
@@ -235,11 +254,11 @@ class SqliteDict(DictClass):
 
     def __contains__(self, key):
         HAS_ITEM = 'SELECT 1 FROM "%s" WHERE key = ?' % self.tablename
-        return self.conn.select_one(HAS_ITEM, (key,)) is not None
+        return self.conn.select_one(HAS_ITEM, (self.encode_key(key),)) is not None
 
     def __getitem__(self, key):
         GET_ITEM = 'SELECT value FROM "%s" WHERE key = ?' % self.tablename
-        item = self.conn.select_one(GET_ITEM, (key,))
+        item = self.conn.select_one(GET_ITEM, (self.encode_key(key),))
         if item is None:
             raise KeyError(key)
         return self.decode(item[0])
@@ -249,7 +268,7 @@ class SqliteDict(DictClass):
             raise RuntimeError('Refusing to write to read-only SqliteDict')
 
         ADD_ITEM = 'REPLACE INTO "%s" (key, value) VALUES (?,?)' % self.tablename
-        self.conn.execute(ADD_ITEM, (key, self.encode(value)))
+        self.conn.execute(ADD_ITEM, (self.encode_key(key), self.encode(value)))
         if self.autocommit:
             self.commit()
 
@@ -260,7 +279,7 @@ class SqliteDict(DictClass):
         if key not in self:
             raise KeyError(key)
         DEL_ITEM = 'DELETE FROM "%s" WHERE key = ?' % self.tablename
-        self.conn.execute(DEL_ITEM, (key,))
+        self.conn.execute(DEL_ITEM, (self.encode_key(key),))
         if self.autocommit:
             self.commit()
 
@@ -272,7 +291,7 @@ class SqliteDict(DictClass):
             items = items.items()
         except AttributeError:
             pass
-        items = [(k, self.encode(v)) for k, v in items]
+        items = [(self.encode_key(k), self.encode(v)) for k, v in items]
 
         UPDATE_ITEMS = 'REPLACE INTO "%s" (key, value) VALUES (?, ?)' % self.tablename
         self.conn.executemany(UPDATE_ITEMS, items)
