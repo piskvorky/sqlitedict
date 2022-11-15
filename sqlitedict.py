@@ -175,7 +175,7 @@ class SqliteDict(DictClass):
         self.timeout = timeout
         self._outer_stack = outer_stack
 
-        logger.info("opening Sqlite table %r in %r" % (tablename, filename))
+        logger.debug("opening Sqlite table %r in %r" % (tablename, filename))
         self.conn = self._new_conn()
         if self.flag == 'r':
             if self.tablename not in SqliteDict.get_tablenames(self.filename):
