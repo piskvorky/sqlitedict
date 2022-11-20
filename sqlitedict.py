@@ -30,12 +30,10 @@ import sqlite3
 import os
 import sys
 import tempfile
+import threading
 import logging
-import time
 import traceback
 from base64 import b64decode, b64encode
-
-from threading import Thread
 
 __version__ = '2.0.0'
 
@@ -172,7 +170,6 @@ class SqliteDict(DictClass):
         self.decode = decode
         self.encode_key = encode_key
         self.decode_key = decode_key
-        self.timeout = timeout
         self._outer_stack = outer_stack
 
         logger.debug("opening Sqlite table %r in %r" % (tablename, filename))
@@ -193,7 +190,6 @@ class SqliteDict(DictClass):
             self.filename,
             autocommit=self.autocommit,
             journal_mode=self.journal_mode,
-            timeout=self.timeout,
             outer_stack=self._outer_stack,
         )
 
@@ -382,7 +378,7 @@ class SqliteDict(DictClass):
             pass
 
 
-class SqliteMultithread(Thread):
+class SqliteMultithread(threading.Thread):
     """
     Wrap sqlite connection in a way that allows concurrent requests from multiple threads.
 
@@ -390,7 +386,7 @@ class SqliteMultithread(Thread):
     in a separate thread (in the same order they arrived).
 
     """
-    def __init__(self, filename, autocommit, journal_mode, timeout, outer_stack=True):
+    def __init__(self, filename, autocommit, journal_mode, outer_stack=True):
         super(SqliteMultithread, self).__init__()
         self.filename = filename
         self.autocommit = autocommit
@@ -398,14 +394,33 @@ class SqliteMultithread(Thread):
         # use request queue of unlimited size
         self.reqs = Queue()
         self.daemon = True
-        self.exception = None
-        self._sqlitedict_thread_initialized = None
         self._outer_stack = outer_stack
-        self.timeout = timeout
         self.log = logging.getLogger('sqlitedict.SqliteMultithread')
+
+        #
+        # Parts of this object's state get accessed from different threads, so
+        # we use synchronization to avoid race conditions.  For example, the
+        # .exception and ._sqlite_thread_initialized are set inside the new
+        # daemon thread that we spawned, but they get read from the main
+        # thread.  This is particularly important during initialization: the
+        # Thread needs some time to actually start working, and until this
+        # happens, any calls to e.g. check_raise_error() will prematurely
+        # return None, meaning all is well.  If the that connection happens to
+        # fail, we'll never know about it, and instead wait for a result that
+        # never arrives (effectively, deadlocking).  Locking solves this
+        # problem by eliminating the race condition.
+        #
+        self._lock = threading.Lock()
+        self._lock.acquire()
+        self.exception = None
+
         self.start()
 
-    def run(self):
+    def _connect(self):
+        """Connect to the underlying database.
+
+        Raises an exception on failure.  Returns the connection and cursor on success.
+        """
         try:
             if self.autocommit:
                 conn = sqlite3.connect(self.filename, isolation_level=None, check_same_thread=False)
@@ -427,7 +442,17 @@ class SqliteMultithread(Thread):
             self.exception = sys.exc_info()
             raise
 
-        self._sqlitedict_thread_initialized = True
+        return conn, cursor
+
+    def run(self):
+        #
+        # Nb. this is what actually runs inside the new daemon thread.
+        # self._lock is locked at this stage - see the initializer function.
+        #
+        try:
+            conn, cursor = self._connect()
+        finally:
+            self._lock.release()
 
         res = None
         while True:
@@ -443,7 +468,9 @@ class SqliteMultithread(Thread):
                 try:
                     cursor.execute(req, arg)
                 except Exception:
-                    self.exception = (e_type, e_value, e_tb) = sys.exc_info()
+                    with self._lock:
+                        self.exception = (e_type, e_value, e_tb) = sys.exc_info()
+
                     inner_stack = traceback.extract_stack()
 
                     # An exception occurred in our thread, but we may not
@@ -499,29 +526,29 @@ class SqliteMultithread(Thread):
         calls to the `execute*` methods to check for and raise an exception in a
         previous call to the MainThread.
         """
-        if self.exception:
-            e_type, e_value, e_tb = self.exception
+        with self._lock:
+            if self.exception:
+                e_type, e_value, e_tb = self.exception
 
-            # clear self.exception, if the caller decides to handle such
-            # exception, we should not repeatedly re-raise it.
-            self.exception = None
+                # clear self.exception, if the caller decides to handle such
+                # exception, we should not repeatedly re-raise it.
+                self.exception = None
 
-            self.log.error('An exception occurred from a previous statement, view '
-                           'the logging namespace "sqlitedict" for outer stack.')
+                self.log.error('An exception occurred from a previous statement, view '
+                               'the logging namespace "sqlitedict" for outer stack.')
 
-            # The third argument to raise is the traceback object, and it is
-            # substituted instead of the current location as the place where
-            # the exception occurred, this is so that when using debuggers such
-            # as `pdb', or simply evaluating the naturally raised traceback, we
-            # retain the original (inner) location of where the exception
-            # occurred.
-            reraise(e_type, e_value, e_tb)
+                # The third argument to raise is the traceback object, and it is
+                # substituted instead of the current location as the place where
+                # the exception occurred, this is so that when using debuggers such
+                # as `pdb', or simply evaluating the naturally raised traceback, we
+                # retain the original (inner) location of where the exception
+                # occurred.
+                reraise(e_type, e_value, e_tb)
 
     def execute(self, req, arg=None, res=None):
         """
         `execute` calls are non-blocking: just queue up the request and return immediately.
         """
-        self._wait_for_initialization()
         self.check_raise_error()
         stack = None
 
@@ -588,26 +615,6 @@ class SqliteMultithread(Thread):
             # returning (by semaphore '--no more--'
             self.select_one('--close--')
             self.join()
-
-    def _wait_for_initialization(self):
-        """
-        Polls the 'initialized' flag to be set by the started Thread in run().
-        """
-        # A race condition may occur without waiting for initialization:
-        # __init__() finishes with the start() call, but the Thread needs some time to actually start working.
-        # If opening the database file fails in run(), an exception will occur and self.exception will be set.
-        # But if we run check_raise_error() before run() had a chance to set self.exception, it will report
-        # a false negative: An exception occured and the thread terminates but self.exception is unset.
-        # This leads to a deadlock while waiting for the results of execute().
-        # By waiting for the Thread to set the initialized flag, we can ensure the thread has successfully
-        # opened the file - and possibly set self.exception to be detected by check_raise_error().
-
-        start_time = time.time()
-        while time.time() - start_time < self.timeout:
-            if self._sqlitedict_thread_initialized or self.exception:
-                return
-            time.sleep(0.1)
-        raise TimeoutError("SqliteMultithread failed to flag initialization within %0.0f seconds." % self.timeout)
 
 
 #
