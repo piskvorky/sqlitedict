@@ -399,16 +399,16 @@ class SqliteMultithread(threading.Thread):
 
         #
         # Parts of this object's state get accessed from different threads, so
-        # we use synchronization to avoid race conditions.  For example, the
-        # .exception and ._sqlite_thread_initialized are set inside the new
-        # daemon thread that we spawned, but they get read from the main
-        # thread.  This is particularly important during initialization: the
-        # Thread needs some time to actually start working, and until this
-        # happens, any calls to e.g. check_raise_error() will prematurely
-        # return None, meaning all is well.  If the that connection happens to
-        # fail, we'll never know about it, and instead wait for a result that
-        # never arrives (effectively, deadlocking).  Locking solves this
-        # problem by eliminating the race condition.
+        # we use synchronization to avoid race conditions.  For example,
+        # .exception gets set inside the new daemon thread that we spawned, but
+        # gets read from the main thread.  This is particularly important
+        # during initialization: the Thread needs some time to actually start
+        # working, and until this happens, any calls to e.g.
+        # check_raise_error() will prematurely return None, meaning all is
+        # well.  If the that connection happens to fail, we'll never know about
+        # it, and instead wait for a result that never arrives (effectively,
+        # deadlocking).  Locking solves this problem by eliminating the race
+        # condition.
         #
         self._lock = threading.Lock()
         self._lock.acquire()
