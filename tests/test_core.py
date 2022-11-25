@@ -3,6 +3,7 @@ import json
 import unittest
 import tempfile
 import os
+from unittest.mock import patch
 
 # local
 import sqlitedict
@@ -65,6 +66,40 @@ class SqliteMiscTest(unittest.TestCase):
             # exercise: the implicit commit is nonblocking
             d['key'] = 'value'
             d.commit(blocking=False)
+
+    def test_cancel_iterate(self):
+        import time
+
+        class EndlessKeysIterator:
+            def __init__(self) -> None:
+                self.value = 0
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                self.value += 1
+                return [self.value]
+
+        with patch('sqlitedict.sqlite3') as mock_sqlite3:
+            ki = EndlessKeysIterator()
+            cursor = mock_sqlite3.connect().cursor()
+            cursor.__iter__.return_value = ki
+
+            with SqliteDict(autocommit=True) as d:
+                for i, k in enumerate(d.keys()):
+                    assert i + 1 == k
+                    if k > 100:
+                        break
+                assert ki.value > 101
+
+                # Release GIL, let background threads run.
+                # Don't use gc.collect because this is simulate user code.
+                time.sleep(0.01)
+
+                current = ki.value
+                time.sleep(1)
+                assert current == ki.value, 'Will not read more after iterate stop'
 
 
 class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
