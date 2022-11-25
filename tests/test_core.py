@@ -282,12 +282,18 @@ class SqliteDictJsonSerializationTest(unittest.TestCase):
 
 
 class TablenamesTest(unittest.TestCase):
+    def tearDown(self):
+        for f in ('tablenames-test-1.sqlite', 'tablenames-test-2.sqlite'):
+            path = norm_file(os.path.join('tests/db', f))
+            if os.path.isfile(path):
+                os.unlink(path)
 
-    def test_tablenames(self):
+    def test_tablenames_unnamed(self):
         fname = norm_file('tests/db/tablenames-test-1.sqlite')
         SqliteDict(fname)
         self.assertEqual(SqliteDict.get_tablenames(fname), ['unnamed'])
 
+    def test_tablenams_named(self):
         fname = norm_file('tests/db/tablenames-test-2.sqlite')
         with SqliteDict(fname, tablename='table1'):
             self.assertEqual(SqliteDict.get_tablenames(fname), ['table1'])

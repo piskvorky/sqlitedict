@@ -19,7 +19,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Update pip
-        run: python -m pip install -U coverage flake8 pip pytest pytest-coverage
+        run: python -m pip install -U coverage flake8 pip pytest pytest-coverage pytest-benchmark
 
       - name: Flake8
         run: flake8 sqlitedict.py tests
@@ -34,6 +34,9 @@ jobs:
 
       - name: Run tests
         run: pytest tests --cov=sqlitedict
+
+      - name: Run benchmarks
+        run: pytest benchmarks
 
       - name: Run doctests
         run: python -m doctest README.rst
