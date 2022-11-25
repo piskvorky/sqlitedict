@@ -533,9 +533,9 @@ class SqliteMultithread(Thread):
                     for rec in cursor:
                         if _put(res_ref, rec) == _PUT_REFERENT_DESTROYED:
                             #
-                            # The queue we are sending responses to got
-                            # garbage collected, so we stop processing the
-                            # commands.
+                            # The queue we are sending responses to got garbage
+                            # collected.  Nobody is listening anymore, so we
+                            # stop sending responses.
                             #
                             break
 
