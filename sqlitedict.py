@@ -78,7 +78,7 @@ logger = logging.getLogger(__name__)
 # _REQUEST_COMMIT: request that any changes be committed to the DB
 #
 # Responses are either SQL records (e.g. results of a SELECT) or the magic
-# _RESPONSES_NO_MORE command, which indicates nothing else will ever be written
+# _RESPONSE_NO_MORE command, which indicates nothing else will ever be written
 # to the response queue.
 #
 _REQUEST_CLOSE = '--close--'
