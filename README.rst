@@ -82,7 +82,7 @@ Context Manager
     >>> from sqlitedict import SqliteDict
     >>>
     >>> # The database is automatically closed when leaving the with section.
-    >>> # Uncommited objects are not saved on close. REMEMBER TO COMMIT!
+    >>> # Uncommitted objects are not saved on close. REMEMBER TO COMMIT!
     >>>
     >>> with SqliteDict("example.sqlite") as db:
     ...     print("There are %d items in the database" % len(db))

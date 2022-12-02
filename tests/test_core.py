@@ -140,7 +140,7 @@ class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
 
     def test_readonly_table(self):
         """
-        Read-only access on a non-existant tablename should raise RuntimeError,
+        Read-only access on a non-existent tablename should raise RuntimeError,
         and not create a new (empty) table.
         """
         fname = norm_file('tests/db/sqlitedict-override-test.sqlite')
