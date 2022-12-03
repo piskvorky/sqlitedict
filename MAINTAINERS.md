@@ -6,6 +6,7 @@ To release a new version:
 2. Bump version
 3. Test!
 4. Add a tag and push it to upstream
+5. Publish the release on github
 
 ## Updating CHANGELOG.md
 
@@ -46,3 +47,9 @@ git push origin --tags
 
 The leading "v" is important, our CI will use that to identify the release.
 Once the tag is uploaded to github, CI will take care of everything, including uploading the release to PyPI.
+
+## Publishing on github
+
+1. Go to https://github.com/RaRe-Technologies/sqlitedict/releases/new
+2. Select the tag for the latest releases
+3. Click on "autogenerate change log"
