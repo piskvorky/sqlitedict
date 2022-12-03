@@ -40,4 +40,4 @@ jobs:
       - name: Upload tarball to PyPI
         run: |
           . venv/bin/activate
-          twine upload dist/smart_open-${{ steps.get_version.outputs.V }}.tar.gz -u ${{ env.PYPI_USERNAME }} -p ${{ env.PYPI_PASSWORD }}
+          twine upload dist/sqlitedict-${{ steps.get_version.outputs.V }}.tar.gz -u ${{ env.PYPI_USERNAME }} -p ${{ env.PYPI_PASSWORD }}
