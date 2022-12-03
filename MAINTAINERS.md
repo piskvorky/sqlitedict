@@ -3,7 +3,7 @@
 To release a new version:
 
 1. Update CHANGELOG.md
-2. Bump version at the top of sqlitedict.py
+2. Bump version
 3. Test!
 4. Add a tag and push it to upstream
 
@@ -17,6 +17,13 @@ release/summarize_pr.py {prid}
 ```
 
 and copy-paste the result into CHANGELOG.md
+
+## Bumping version
+
+Do this in two places:
+
+1. sqlitedict.py
+2. setup.py
 
 ## Testing
 
