@@ -81,6 +81,7 @@ logger = logging.getLogger(__name__)
 #
 _REQUEST_CLOSE = '--close--'
 _REQUEST_COMMIT = '--commit--'
+_REQUEST_AUTOCOMMIT = '--autocommit--'
 _RESPONSE_NO_MORE = '--no more--'
 
 #
@@ -210,7 +211,7 @@ class SqliteDict(DictClass):
         # See https://github.com/RaRe-Technologies/sqlitedict/pull/113
         self.tablename = tablename.replace('"', '""')
 
-        self.autocommit = autocommit
+        self._autocommit = autocommit
         self.journal_mode = journal_mode
         self.encode = encode
         self.decode = decode
@@ -230,6 +231,15 @@ class SqliteDict(DictClass):
             self.conn.commit()
         if flag == 'w':
             self.clear()
+
+    @property
+    def autocommit(self):
+        return self._autocommit
+
+    @autocommit.setter
+    def autocommit(self, value):
+        self._autocommit = value
+        self.conn.select_one(_REQUEST_AUTOCOMMIT, (value,))
 
     def _new_conn(self):
         return SqliteMultithread(
@@ -513,6 +523,13 @@ class SqliteMultithread(threading.Thread):
             if req == _REQUEST_CLOSE:
                 assert res_ref, ('--close-- without return queue', res_ref)
                 break
+            elif req == _REQUEST_AUTOCOMMIT:
+                self.autocommit = arg[0]
+                if self.autocommit:
+                    conn.isolation_level = None
+                else:
+                    conn.isolation_level = ""
+                _put(res_ref, _RESPONSE_NO_MORE)
             elif req == _REQUEST_COMMIT:
                 conn.commit()
                 _put(res_ref, _RESPONSE_NO_MORE)
