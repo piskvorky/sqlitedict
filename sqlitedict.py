@@ -190,17 +190,21 @@ class _SliceableSelectIterator(_SelectIterator):
                 if s.stop < 0:
                     raise ValueError('stop < 0 is not supported')
 
-            if s.start is None and s.stop is None: # [:]
+            # [:]
+            if s.start is None and s.stop is None:
                 sql_limit = ''
 
-            elif s.start is None: # [:#]
+            # [:#]
+            elif s.start is None:
                 sql_limit = ' LIMIT %i' % s.stop
 
-            elif s.stop is None: # [#:]
-                sql_limit = ' LIMIT %i OFFSET %i' % ( -1, s.start ) # in sqlite, -1 mean not limit
+            # [#:]
+            elif s.stop is None:
+                sql_limit = ' LIMIT %i OFFSET %i' % (-1, s.start)    # in sqlite, -1 mean not limit
 
-            else: # [#:#]
-                sql_limit = ' LIMIT %i OFFSET %i' % ( max(0, s.stop - s.start), s.start )
+            # [#:#]
+            else:
+                sql_limit = ' LIMIT %i OFFSET %i' % (max(0, s.stop - s.start), s.start)
 
             new_sql = self._sql + sql_limit
 
