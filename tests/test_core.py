@@ -103,33 +103,108 @@ class SqliteMiscTest(unittest.TestCase):
 
     def test_iterkeys(self):
         with SqliteDict(':memory:', autocommit=True) as d:
-            for i in range(1000):
+            for i in range(50):
                 d[i] = i + 100000
 
             keys = list(d.iterkeys())
-            assert len(keys) == 1000
-            for i, k in zip(range(1000), keys):
+            assert len(keys) == 50
+            for i, k in zip(range(50), keys):
                 assert str(i) == k
+
+    def test_iterkeys_with_slice(self):
+        with SqliteDict(':memory:', autocommit=True) as d:
+            for i in range(50):
+                d[i] = i + 100000
+
+            assert list(d.iterkeys()[4:12]) == [str(x) for x in range(50)][4:12]
+            assert list(d.iterkeys()[:12]) == [str(x) for x in range(50)][:12]
+            assert list(d.iterkeys()[4:]) == [str(x) for x in range(50)][4:]
+
+        with patch('sqlitedict.sqlite3') as mock_sqlite3:
+            execute = mock_sqlite3.connect().cursor().execute
+
+            with SqliteDict(':memory:', autocommit=True) as d:
+                list(d.iterkeys()[4:12])
+                execute.assert_called_with('SELECT key FROM "unnamed" ORDER BY rowid LIMIT 8 OFFSET 4', ())
+
+                list(d.iterkeys()[:12])
+                execute.assert_called_with('SELECT key FROM "unnamed" ORDER BY rowid LIMIT 12', ())
+
+                list(d.iterkeys()[4:])
+                execute.assert_called_with('SELECT key FROM "unnamed" ORDER BY rowid LIMIT -1 OFFSET 4', ())
+
+                list(d.iterkeys()[:])
+                execute.assert_called_with('SELECT key FROM "unnamed" ORDER BY rowid', ())
 
     def test_itervalues(self):
         with SqliteDict(':memory:', autocommit=True) as d:
-            for i in range(1000):
+            for i in range(50):
                 d[i] = i + 100000
 
             values = list(d.itervalues())
-            assert len(values) == 1000
-            for i, k in zip(range(1000), values):
+            assert len(values) == 50
+            for i, k in zip(range(50), values):
                 assert i + 100000 == k
+
+    def test_itervalues_with_slice(self):
+        with SqliteDict(':memory:', autocommit=True) as d:
+            for i in range(50):
+                d[i] = i + 100000
+
+            assert list(d.itervalues()[4:12]) == [x + 100000 for x in range(50)][4:12]
+            assert list(d.itervalues()[:12]) == [x + 100000 for x in range(50)][:12]
+            assert list(d.itervalues()[4:]) == [x + 100000 for x in range(50)][4:]
+
+        with patch('sqlitedict.sqlite3') as mock_sqlite3:
+            execute = mock_sqlite3.connect().cursor().execute
+
+            with SqliteDict(':memory:', autocommit=True) as d:
+                list(d.itervalues()[4:12])
+                execute.assert_called_with('SELECT value FROM "unnamed" ORDER BY rowid LIMIT 8 OFFSET 4', ())
+
+                list(d.itervalues()[:12])
+                execute.assert_called_with('SELECT value FROM "unnamed" ORDER BY rowid LIMIT 12', ())
+
+                list(d.itervalues()[4:])
+                execute.assert_called_with('SELECT value FROM "unnamed" ORDER BY rowid LIMIT -1 OFFSET 4', ())
+
+                list(d.itervalues()[:])
+                execute.assert_called_with('SELECT value FROM "unnamed" ORDER BY rowid', ())
 
     def test_iteritems(self):
         with SqliteDict(':memory:', autocommit=True) as d:
-            for i in range(1000):
+            for i in range(50):
                 d[i] = i + 100000
 
             items = list(d.iteritems())
-            assert len(items) == 1000
-            for i, key_value in zip(range(1000), items):
+            assert len(items) == 50
+            for i, key_value in zip(range(50), items):
                 assert (str(i), i + 100000) == key_value
+
+    def test_iteritems_with_slice(self):
+        with SqliteDict(':memory:', autocommit=True) as d:
+            for i in range(50):
+                d[i] = i + 100000
+
+            assert list(d.iteritems()[4:12]) == [(str(x), x + 100000) for x in range(50)][4:12]
+            assert list(d.iteritems()[:12]) == [(str(x), x + 100000) for x in range(50)][:12]
+            assert list(d.iteritems()[4:]) == [(str(x), x + 100000) for x in range(50)][4:]
+
+        with patch('sqlitedict.sqlite3') as mock_sqlite3:
+            execute = mock_sqlite3.connect().cursor().execute
+
+            with SqliteDict(':memory:', autocommit=True) as d:
+                list(d.iteritems()[4:12])
+                execute.assert_called_with('SELECT key, value FROM "unnamed" ORDER BY rowid LIMIT 8 OFFSET 4', ())
+
+                list(d.iteritems()[:12])
+                execute.assert_called_with('SELECT key, value FROM "unnamed" ORDER BY rowid LIMIT 12', ())
+
+                list(d.iteritems()[4:])
+                execute.assert_called_with('SELECT key, value FROM "unnamed" ORDER BY rowid LIMIT -1 OFFSET 4', ())
+
+                list(d.iteritems()[:])
+                execute.assert_called_with('SELECT key, value FROM "unnamed" ORDER BY rowid', ())
 
 
 class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):

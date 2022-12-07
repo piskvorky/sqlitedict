@@ -142,6 +142,73 @@ def identity(obj):
     return obj
 
 
+class _SelectIterator:
+    def __init__(self, conn, sql, column_decoders) -> None:
+        assert sql.startswith('SELECT')
+        self._conn = conn
+        self._sql = sql
+        self._column_decoders = column_decoders
+        self._iter = None
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self._iter is None:
+            self._iter = self._conn.select(self._sql)
+
+        columns_values = self._iter.__next__()
+        column_decoders = self._column_decoders
+
+        # fast path for iterkeys / itervalues
+        if len(column_decoders) == 1:
+            return column_decoders[0](columns_values[0])
+        # fast path for iteritems
+        elif len(column_decoders) == 2:
+            return column_decoders[0](columns_values[0]), column_decoders[1](columns_values[1])
+
+        # fallback
+        return tuple(d(v) for v, d in zip(columns_values, column_decoders))
+
+
+class _SliceableSelectIterator(_SelectIterator):
+    def __getitem__(self, s):
+        if isinstance(s, slice):
+
+            if s.step is not None and s.step != 1:
+                raise ValueError('step must be 1')
+
+            if s.start is not None:
+                if not isinstance(s.start, int):
+                    raise TypeError('start must be int')
+                if s.start < 0:
+                    raise ValueError('start < 0 is not supported')
+
+            if s.stop is not None:
+                if not isinstance(s.stop, int):
+                    raise TypeError('stop must be int')
+                if s.stop < 0:
+                    raise ValueError('stop < 0 is not supported')
+
+            if s.start is None and s.stop is None: # [:]
+                sql_limit = ''
+
+            elif s.start is None: # [:#]
+                sql_limit = ' LIMIT %i' % s.stop
+
+            elif s.stop is None: # [#:]
+                sql_limit = ' LIMIT %i OFFSET %i' % ( -1, s.start ) # in sqlite, -1 mean not limit
+
+            else: # [#:#]
+                sql_limit = ' LIMIT %i OFFSET %i' % ( max(0, s.stop - s.start), s.start )
+
+            new_sql = self._sql + sql_limit
+
+            return _SelectIterator(self._conn, new_sql, self._column_decoders)
+
+        raise TypeError(type(s))
+
+
 class SqliteDict(DictClass):
     VALID_FLAGS = ['c', 'r', 'w', 'n']
 
@@ -272,18 +339,15 @@ class SqliteDict(DictClass):
 
     def iterkeys(self):
         GET_KEYS = 'SELECT key FROM "%s" ORDER BY rowid' % self.tablename
-        for key in self.conn.select(GET_KEYS):
-            yield self.decode_key(key[0])
+        return _SliceableSelectIterator(self.conn, GET_KEYS, (self.decode_key, ))
 
     def itervalues(self):
         GET_VALUES = 'SELECT value FROM "%s" ORDER BY rowid' % self.tablename
-        for value in self.conn.select(GET_VALUES):
-            yield self.decode(value[0])
+        return _SliceableSelectIterator(self.conn, GET_VALUES, (self.decode, ))
 
     def iteritems(self):
         GET_ITEMS = 'SELECT key, value FROM "%s" ORDER BY rowid' % self.tablename
-        for key, value in self.conn.select(GET_ITEMS):
-            yield self.decode_key(key), self.decode(value)
+        return _SliceableSelectIterator(self.conn, GET_ITEMS, (self.decode_key, self.decode))
 
     def keys(self):
         return self.iterkeys()
