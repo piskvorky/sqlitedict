@@ -101,6 +101,36 @@ class SqliteMiscTest(unittest.TestCase):
                 time.sleep(1)
                 assert current == ki.value, 'Will not read more after iterate stop'
 
+    def test_iterkeys(self):
+        with SqliteDict(':memory:', autocommit=True) as d:
+            for i in range(1000):
+                d[i] = i + 100000
+
+            keys = list(d.iterkeys())
+            assert len(keys) == 1000
+            for i, k in zip(range(1000), keys):
+                assert str(i) == k
+
+    def test_itervalues(self):
+        with SqliteDict(':memory:', autocommit=True) as d:
+            for i in range(1000):
+                d[i] = i + 100000
+
+            values = list(d.itervalues())
+            assert len(values) == 1000
+            for i, k in zip(range(1000), values):
+                assert i + 100000 == k
+
+    def test_iteritems(self):
+        with SqliteDict(':memory:', autocommit=True) as d:
+            for i in range(1000):
+                d[i] = i + 100000
+
+            items = list(d.iteritems())
+            assert len(items) == 1000
+            for i, key_value in zip(range(1000), items):
+                assert (str(i), i + 100000) == key_value
+
 
 class NamedSqliteDictCreateOrReuseTest(TempSqliteDictTest):
     """Verify default flag='c', and flag='n' of SqliteDict()."""
