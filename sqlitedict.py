@@ -514,7 +514,7 @@ class SqliteMultithread(threading.Thread):
                 assert res_ref, ('--close-- without return queue', res_ref)
                 break
             elif req == _REQUEST_COMMIT:
-                conn.commit()
+                self._commit(conn)
                 _put(res_ref, _RESPONSE_NO_MORE)
             else:
                 try:
@@ -569,12 +569,23 @@ class SqliteMultithread(threading.Thread):
                     _put(res_ref, _RESPONSE_NO_MORE)
 
                 if self.autocommit:
-                    conn.commit()
+                    self._commit(conn)
 
         self.log.debug('received: %s, send: --no more--', req)
         conn.close()
 
         _put(res_ref, _RESPONSE_NO_MORE)
+
+    def _commit(self, conn):
+        try:
+            conn.commit()
+        except Exception:
+            # Keep the worker alive and let the caller observe the failure via
+            # the same error channel as failed SQL statements. A failed commit
+            # leaves the transaction available for a later retry.
+            with self._lock:
+                self.exception = sys.exc_info()
+            self.log.exception('Failed to commit the database transaction.')
 
     def check_raise_error(self):
         """
