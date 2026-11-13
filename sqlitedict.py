@@ -519,6 +519,11 @@ class SqliteMultithread(threading.Thread):
             else:
                 try:
                     cursor.execute(req, arg)
+                    if res_ref:
+                        for rec in cursor:
+                            if _put(res_ref, rec) == _PUT_REFERENT_DESTROYED:
+                                # Nobody is listening to this result anymore.
+                                break
                 except Exception:
                     with self._lock:
                         self.exception = (e_type, e_value, e_tb) = sys.exc_info()
@@ -557,15 +562,6 @@ class SqliteMultithread(threading.Thread):
                         )
 
                 if res_ref:
-                    for rec in cursor:
-                        if _put(res_ref, rec) == _PUT_REFERENT_DESTROYED:
-                            #
-                            # The queue we are sending responses to got garbage
-                            # collected.  Nobody is listening anymore, so we
-                            # stop sending responses.
-                            #
-                            break
-
                     _put(res_ref, _RESPONSE_NO_MORE)
 
                 if self.autocommit:
